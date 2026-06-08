@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- LUMIIA — Générateur de Lustre Gothique — v1.6 -->
+<!-- LUMIIA — Générateur de Lustre Gothique — v1.7 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -57,14 +57,33 @@
   #loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--brass);font-family:'Cinzel',serif;letter-spacing:.2em;font-size:13px}
   #toast{position:absolute;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:#1f160b;border:1px solid var(--brass);color:var(--gold);padding:10px 18px;border-radius:8px;font-size:12.5px;transition:.35s;opacity:0;max-width:80%}
   #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  #preset-grp input,#preset-sel{width:100%;padding:8px;margin-bottom:7px;background:#0f0c08;border:1px solid var(--edge);border-radius:6px;color:var(--ink);font-family:'Spectral',Georgia,serif;font-size:12.5px}
   @media(max-width:760px){#app{flex-direction:column}#panel{width:100%;min-width:0;height:46%;border-right:none;border-bottom:1px solid var(--edge)}#stage{height:54%}}
 </style>
 </head>
 <body>
 <div id="app">
   <aside id="panel">
-    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v1.6</span></div>
+    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v1.7</span></div>
     <div class="tag">Générateur paramétrique gothique — 1 à 2 m</div>
+
+    <div class="grp" id="preset-grp">
+      <div class="gh">Presets (synchro Firebase)</div>
+      <div id="auth-out">
+        <input id="login-email" type="email" placeholder="email" autocomplete="username">
+        <input id="login-password" type="password" placeholder="mot de passe" autocomplete="current-password">
+        <button class="btn" id="login-btn">Connexion</button>
+        <div id="auth-msg" class="hint-txt"></div>
+      </div>
+      <div id="auth-in" style="display:none">
+        <div class="hint-txt">Connecté : <b id="auth-email" style="color:var(--ink)"></b> · <span id="logout" style="cursor:pointer;color:var(--brass)">déconnexion</span></div>
+        <select id="preset-sel"></select>
+        <div class="toggles"><div class="chip" id="preset-load">Charger</div><div class="chip" id="preset-del">Supprimer</div></div>
+        <input id="preset-name" type="text" placeholder="nom du preset (ex. Lustre bar)">
+        <button class="btn" id="preset-save">Enregistrer le réglage actuel</button>
+        <div id="preset-msg" class="hint-txt"></div>
+      </div>
+    </div>
 
     <div class="grp">
       <div class="gh">Structure</div>
@@ -173,8 +192,11 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getDatabase, ref as dbRef, onValue, set as dbSet, remove as dbRemove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-const VERSION='v1.6';
+const VERSION='v1.7';
 const BED={single:[325,320,325],dual:[300,320,325]};
 const LED_SPACING=1000/60, STRIP_W=12, BAND_H=10;
 const P={arms:8,tiers:1,colH:600,bulges:3,finial:1,chain:250,
@@ -438,6 +460,48 @@ function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.wid
 function loop(){requestAnimationFrame(loop);resize();if(P.spin){root.rotation.y+=0.004;R();}
   const moved=controls.update();
   if(moved||needsRender){renderer.render(scene,camera);needsRender=false;}}
+// ---- Firebase : auth + presets synchronisés ----
+const fbApp=initializeApp({apiKey:"AIzaSyBPgjVFKrP80qX_hlfUFqL168XONfNIBA4",authDomain:"lumiia-live.firebaseapp.com",
+  databaseURL:"https://lumiia-live-default-rtdb.europe-west1.firebasedatabase.app",projectId:"lumiia-live",
+  storageBucket:"lumiia-live.firebasestorage.app",messagingSenderId:"823919513931",appId:"1:823919513931:web:6f6f3c7c6d1699457b18ce"});
+const fbAuth=getAuth(fbApp), fbDb=getDatabase(fbApp), PRESETS='lustre/presets';
+let presetsCache={};
+const $=id=>document.getElementById(id);
+function snapshotP(){const o={...P};delete o.pieces;delete o.spin;return o;}
+function syncUI(){
+  sliders.forEach(([id,key,dec,unit])=>{const el=$(id);if(!el||P[key]===undefined)return;el.value=P[key];const lab=$('lab-'+id);if(lab)lab.textContent=(dec?(+P[key]).toFixed(dec):P[key])+unit;});
+  $('ambiance').value=P.ambiance;$('lab-ambiance').textContent=(+P.ambiance).toFixed(2);renderer.toneMappingExposure=P.ambiance;
+  [['t-armglass','armGlass'],['t-wings','wings'],['t-bulbs','bulbs'],['t-drops','drops'],['t-strip','strip'],['t-crystals','crystals'],['t-beads','beads'],['t-grain','grain']]
+    .forEach(([id,k])=>$(id).classList.toggle('on',!!P[k]));
+  $('m-petg').classList.toggle('on',P.wingMode==='petg');$('m-tissu').classList.toggle('on',P.wingMode==='tissu');
+  $('b-single').classList.toggle('on',P.bed==='single');$('b-dual').classList.toggle('on',P.bed==='dual');
+  matWing=makeWingMat();applyGrain();renderTierCfg();rebuild();
+}
+function presetMsg(t){$('preset-msg').textContent=t;}
+function subscribePresets(){onValue(dbRef(fbDb,PRESETS),snap=>{presetsCache=snap.val()||{};
+  const sel=$('preset-sel'),cur=sel.value,keys=Object.keys(presetsCache);
+  sel.innerHTML=keys.length?keys.map(k=>`<option value="${k}">${presetsCache[k].name||k}</option>`).join(''):'<option value="">(aucun preset)</option>';
+  if(presetsCache[cur])sel.value=cur;
+},err=>presetMsg('Lecture refusée — règle /lustre à ajouter ('+(err.code||err.message)+')'));}
+$('login-btn').addEventListener('click',async()=>{const e=$('login-email').value.trim(),p=$('login-password').value;
+  if(!e||!p)return;$('auth-msg').textContent='Connexion…';
+  try{await signInWithEmailAndPassword(fbAuth,e,p);}catch(err){$('auth-msg').textContent='Échec : '+(err.code||err.message);}});
+$('login-password').addEventListener('keydown',e=>{if(e.key==='Enter')$('login-btn').click();});
+$('logout').addEventListener('click',()=>signOut(fbAuth));
+onAuthStateChanged(fbAuth,u=>{$('auth-out').style.display=u?'none':'block';$('auth-in').style.display=u?'block':'none';
+  if(u){$('auth-email').textContent=u.email;subscribePresets();}});
+$('preset-save').addEventListener('click',async()=>{const name=$('preset-name').value.trim();
+  if(!name){presetMsg('Donne un nom au preset.');return;}
+  const key=name.toLowerCase().normalize('NFD').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,40)||('p'+Date.now());
+  try{await dbSet(dbRef(fbDb,PRESETS+'/'+key),{name,by:fbAuth.currentUser.email,at:Date.now(),P:snapshotP(),tierCfg:tierCfg.map(t=>({...t}))});presetMsg('« '+name+' » enregistré ✓');}
+  catch(err){presetMsg('Échec écriture : '+(err.code||err.message)+' (règle /lustre ?)');}});
+$('preset-load').addEventListener('click',()=>{const pr=presetsCache[$('preset-sel').value];if(!pr){presetMsg('Aucun preset sélectionné.');return;}
+  Object.assign(P,pr.P||{});
+  if(pr.tierCfg)for(let i=0;i<tierCfg.length;i++)tierCfg[i]=Object.assign({wings:true,strip:true,bulbs:true,crystals:true},pr.tierCfg[i]||{});
+  syncUI();presetMsg('« '+(pr.name||'')+' » chargé ✓');});
+$('preset-del').addEventListener('click',async()=>{const k=$('preset-sel').value;if(!k)return;
+  try{await dbRemove(dbRef(fbDb,PRESETS+'/'+k));presetMsg('Supprimé.');}catch(err){presetMsg('Échec : '+(err.code||err.message));}});
+
 renderTierCfg();rebuild();document.getElementById('loading').style.display='none';loop();
 </script>
 </body>
