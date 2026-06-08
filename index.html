@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- LUMIIA — Générateur de Lustre Gothique — v2.7 -->
+<!-- LUMIIA — Générateur de Lustre Gothique — v2.8 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -73,7 +73,7 @@
 <body>
 <div id="app">
   <aside id="panel">
-    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.7</span></div>
+    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.8</span></div>
     <div class="tag">Générateur paramétrique gothique — 1 à 2 m</div>
 
     <div class="grp" id="preset-grp">
@@ -233,7 +233,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref as dbRef, onValue, set as dbSet, remove as dbRemove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-const VERSION='v2.7';
+const VERSION='v2.8';
 const BED={single:[325,320,325],dual:[300,320,325]};
 const LED_SPACING=1000/60, STRIP_W=12, BAND_H=10;
 const P={arms:8,tiers:1,colH:600,bulges:3,finial:1,chain:250,
@@ -410,14 +410,14 @@ function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR)
   // renflements (knuckles) le long du bras
   for(let k=1;k<=P.knuckles;k++){const t=k/(P.knuckles+1);const p=curve.getPoint(t),tn=curve.getTangent(t).normalize();
     const ring=new THREE.Mesh(new THREE.TorusGeometry(P.tubeR*1.5*O,P.tubeR*0.5*O,8,16),matArm);
-    ring.position.copy(p);ring.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),tn);ring.userData.layer='douilles';g.add(ring);}
+    ring.position.copy(p);ring.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),tn);g.add(ring);}
   const nt=new THREE.Mesh(new THREE.SphereGeometry(P.tubeR*1.25*O,16,12),matArm);nt.position.copy(tip);nt.userData.layer='coupelles';g.add(nt);
   const cup=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(P.tubeR*0.9,0),new THREE.Vector2(P.cupR*0.5,3),
     new THREE.Vector2(P.cupR,15),new THREE.Vector2(P.cupR*0.92,19),new THREE.Vector2(P.tubeR*1.1,8),new THREE.Vector2(0,8)],30),matCup);cup.position.copy(tip);cup.userData.layer='coupelles';g.add(cup);
   let e14Top=tip.y+8;
   if(P.bulbMode==='e14'){ // douille E14 : trou femelle filete + adaptateur, VISIBLES meme si les flammes sont eteintes
     const baseY=tip.y+P.tubeR*1.25*O+2,scR=9,hBot=15,hexR=12,topR=7,hTop=12,topY=hBot+5,ringR=scR+5,ringH=18; // AU-DESSUS du noeud sinon la sphere cache le trou
-    const ring=new THREE.Mesh(new THREE.CylinderGeometry(ringR,ringR,ringH,28,1,true),matCup);ring.position.set(tip.x,baseY-1+ringH/2,tip.z);g.add(ring);
+    const ring=new THREE.Mesh(new THREE.CylinderGeometry(ringR,ringR,ringH,28,1,true),matCup);ring.position.set(tip.x,baseY-1+ringH/2,tip.z);ring.userData.layer='douilles';g.add(ring);
     const fbot=new THREE.Mesh(new THREE.CircleGeometry(ringR,28),matCup);fbot.rotation.x=-Math.PI/2;fbot.position.set(tip.x,baseY-1,tip.z);fbot.userData.layer='douilles';g.add(fbot);
     const recess=new THREE.Mesh(new THREE.CylinderGeometry(scR,scR,ringH-1,24,1,true),matBore);recess.position.set(tip.x,baseY-0.5+ringH/2,tip.z);recess.userData.layer='douilles';g.add(recess);
     const rbot=new THREE.Mesh(new THREE.CircleGeometry(scR,24),matBore);rbot.rotation.x=-Math.PI/2;rbot.position.set(tip.x,baseY-0.5,tip.z);rbot.userData.layer='douilles';g.add(rbot);
