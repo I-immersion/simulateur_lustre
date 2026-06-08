@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- LUMIIA — Générateur de Lustre Gothique — v2.2 -->
+<!-- LUMIIA — Générateur de Lustre Gothique — v2.3 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -45,9 +45,9 @@
   .off{opacity:.38;pointer-events:none}
   .collapsed{display:none!important}
   #stage{position:relative}
-  #xsection{position:absolute;top:14px;right:14px;width:200px;background:rgba(20,16,10,.85);border:1px solid var(--edge);border-radius:10px;padding:5px;backdrop-filter:blur(4px);z-index:5}
+  #xsection{position:absolute;top:14px;right:14px;width:400px;background:rgba(20,16,10,.85);border:1px solid var(--edge);border-radius:10px;padding:5px;backdrop-filter:blur(4px);z-index:5}
   #xsection svg{display:block;width:100%;height:auto}
-  @media(max-width:760px){#xsection{width:138px;top:8px;right:8px}}
+  @media(max-width:760px){#xsection{width:240px;top:8px;right:8px}}
   #finish-sw{display:flex;flex-wrap:wrap;gap:6px}
   #finish-sw .sw{flex:0 0 auto;width:30px;height:24px;border-radius:5px;cursor:pointer;border:2px solid transparent}
   #finish-sw .sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--brass)}
@@ -73,7 +73,7 @@
 <body>
 <div id="app">
   <aside id="panel">
-    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.2</span></div>
+    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.3</span></div>
     <div class="tag">Générateur paramétrique gothique — 1 à 2 m</div>
 
     <div class="grp" id="preset-grp">
@@ -161,7 +161,7 @@
     <div class="grp">
       <div class="gh">Ornementation</div>
       <div class="toggles">
-        <div class="chip on" id="t-bulbs">Flammes</div>
+        <div class="chip on" id="t-bulbs">Ampoules / flammes</div>
         <div class="chip on" id="t-drops">Pampilles</div>
         <div class="chip on" id="t-strip">Strip LED</div>
       </div>
@@ -223,7 +223,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref as dbRef, onValue, set as dbSet, remove as dbRemove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-const VERSION='v2.2';
+const VERSION='v2.3';
 const BED={single:[325,320,325],dual:[300,320,325]};
 const LED_SPACING=1000/60, STRIP_W=12, BAND_H=10;
 const P={arms:8,tiers:1,colH:600,bulges:3,finial:1,chain:250,
@@ -401,6 +401,29 @@ function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR)
   const nt=new THREE.Mesh(new THREE.SphereGeometry(P.tubeR*1.25*O,16,12),matArm);nt.position.copy(tip);g.add(nt);
   const cup=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(P.tubeR*0.9,0),new THREE.Vector2(P.cupR*0.5,3),
     new THREE.Vector2(P.cupR,15),new THREE.Vector2(P.cupR*0.92,19),new THREE.Vector2(P.tubeR*1.1,8),new THREE.Vector2(0,8)],30),matCup);cup.position.copy(tip);g.add(cup);
+  let e14Top=tip.y+8;
+  if(P.bulbMode==='e14'){ // douille E14 : trou femelle filete + adaptateur, VISIBLES meme si les flammes sont eteintes
+    const baseY=tip.y+8,scR=9,hBot=15,hexR=12,topR=7,hTop=12,topY=hBot+5,ringR=scR+5,ringH=18;
+    const ring=new THREE.Mesh(new THREE.CylinderGeometry(ringR,ringR,ringH,28,1,true),matCup);ring.position.set(tip.x,baseY-1+ringH/2,tip.z);g.add(ring);
+    const fbot=new THREE.Mesh(new THREE.CircleGeometry(ringR,28),matCup);fbot.rotation.x=-Math.PI/2;fbot.position.set(tip.x,baseY-1,tip.z);g.add(fbot);
+    const recess=new THREE.Mesh(new THREE.CylinderGeometry(scR,scR,ringH-1,24,1,true),matBore);recess.position.set(tip.x,baseY-0.5+ringH/2,tip.z);g.add(recess);
+    const rbot=new THREE.Mesh(new THREE.CircleGeometry(scR,24),matBore);rbot.rotation.x=-Math.PI/2;rbot.position.set(tip.x,baseY-0.5,tip.z);g.add(rbot);
+    if(!draft){const fem=new THREE.Mesh(helixThread(scR,ringH-2,3,0.9),matBore);fem.position.set(tip.x,baseY-0.5,tip.z);g.add(fem);}
+    const GAP=14,adpY=baseY-1+ringH+GAP;
+    const adp=new THREE.Group();adp.position.set(tip.x,adpY,tip.z);
+    const hx=new THREE.Mesh(new THREE.CylinderGeometry(hexR,hexR,5,6),matCup);hx.position.y=hBot+2.5;adp.add(hx);
+    if(draft){
+      const cb=new THREE.Mesh(new THREE.CylinderGeometry(scR,scR,hBot,16),matCup);cb.position.y=hBot/2;adp.add(cb);
+      const ct=new THREE.Mesh(new THREE.CylinderGeometry(topR,topR,hTop,16),matCup);ct.position.y=topY+hTop/2;adp.add(ct);
+    } else {
+      const cb=new THREE.Mesh(new THREE.CylinderGeometry(scR-1,scR-1,hBot,18),matCup);cb.position.y=hBot/2;adp.add(cb);
+      adp.add(new THREE.Mesh(helixThread(scR,hBot,3,1.0),matCup));
+      const ct=new THREE.Mesh(new THREE.CylinderGeometry(topR-1,topR-1,hTop,18),matCup);ct.position.y=topY+hTop/2;adp.add(ct);
+      const tt=new THREE.Mesh(helixThread(topR,hTop,2,0.9),matCup);tt.position.y=topY;adp.add(tt);
+    }
+    g.add(adp);
+    e14Top=adpY+topY+hTop;
+  }
   if(cfg.wings){if(P.wingMode!=='tissu'||P.showFabric)g.add(wingMesh(curve));
     if(P.wingMode==='tissu')g.add(attachBand(curve)); // bande d'accroche 10mm (colle tissu + consolide)
     for(let k=1;k<=P.wingRibs;k++){const t=k/(P.wingRibs+1);const p=curve.getPoint(t);
@@ -422,29 +445,7 @@ function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR)
   if(cfg.crystals){const cl=crystalCluster(P.cupR*0.55*P.crystalSize,3,false);cl.position.set(tip.x,tip.y+2,tip.z);g.add(cl);}
   if(cfg.bulbs){const c=P.candle;
     if(P.bulbMode==='e14'){
-      // === Systeme E14 a DOUBLE FILETAGE (legerement eclate pour voir le vissage) ===
-      const baseY=tip.y+8,scR=8,hBot=14,hexR=11,topR=7,hTop=12,topY=hBot+5,ringR=scR+4,ringH=16;
-      // -- Coupelle : douille FEMELLE filetee, TROU reellement creux et visible --
-      const ring=new THREE.Mesh(new THREE.CylinderGeometry(ringR,ringR,ringH,28,1,true),matCup);ring.position.set(tip.x,baseY-1+ringH/2,tip.z);g.add(ring); // paroi ouverte en haut
-      const fbot=new THREE.Mesh(new THREE.CircleGeometry(ringR,28),matCup);fbot.rotation.x=-Math.PI/2;fbot.position.set(tip.x,baseY-1,tip.z);g.add(fbot); // fond exterieur
-      const recess=new THREE.Mesh(new THREE.CylinderGeometry(scR,scR,ringH-1,22,1,true),matBore);recess.position.set(tip.x,baseY-0.5+ringH/2,tip.z);g.add(recess); // creux sombre = le trou
-      const rbot=new THREE.Mesh(new THREE.CircleGeometry(scR,22),matBore);rbot.rotation.x=-Math.PI/2;rbot.position.set(tip.x,baseY-0.5,tip.z);g.add(rbot);
-      if(!draft){const fem=new THREE.Mesh(helixThread(scR,ringH-2,3,0.9),matBore);fem.position.set(tip.x,baseY-0.5,tip.z);g.add(fem);} // filet femelle visible dans le trou
-      // -- Adaptateur double filetage, souleve de GAP mm au-dessus du trou --
-      const GAP=14,adpY=baseY-1+ringH+GAP;
-      const adp=new THREE.Group();adp.position.set(tip.x,adpY,tip.z);
-      const hx=new THREE.Mesh(new THREE.CylinderGeometry(hexR,hexR,5,6),matCup);hx.position.y=hBot+2.5;adp.add(hx);
-      if(draft){
-        const cb=new THREE.Mesh(new THREE.CylinderGeometry(scR,scR,hBot,16),matCup);cb.position.y=hBot/2;adp.add(cb);
-        const ct=new THREE.Mesh(new THREE.CylinderGeometry(topR,topR,hTop,16),matCup);ct.position.y=topY+hTop/2;adp.add(ct);
-      } else {
-        const cb=new THREE.Mesh(new THREE.CylinderGeometry(scR-1,scR-1,hBot,18),matCup);cb.position.y=hBot/2;adp.add(cb);
-        adp.add(new THREE.Mesh(helixThread(scR,hBot,3,1.0),matCup)); // filet male bas O16
-        const ct=new THREE.Mesh(new THREE.CylinderGeometry(topR-1,topR-1,hTop,18),matCup);ct.position.y=topY+hTop/2;adp.add(ct);
-        const tt=new THREE.Mesh(helixThread(topR,hTop,2,0.9),matCup);tt.position.y=topY;adp.add(tt); // filet male haut O14
-      }
-      g.add(adp);
-      const tipH=adpY+topY+hTop;
+      const tipH=e14Top; // materiel E14 (trou + adaptateur) deja construit plus haut
       const bulb=new THREE.Mesh(new THREE.SphereGeometry(6.5*c,18,14),matCream);bulb.scale.y=1.35;bulb.position.set(tip.x,tipH+9*c,tip.z);mark(bulb,true);g.add(bulb);
       const fl=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(2.4*c,2*c),new THREE.Vector2(1.6*c,5*c),new THREE.Vector2(0,7*c)],12),matFlame);fl.position.set(tip.x,tipH+18*c,tip.z);mark(fl,true);g.add(fl);
       const pl=new THREE.PointLight(0xffd08a,9,700,2);pl.position.set(tip.x,tipH+14*c,tip.z);g.add(pl);
@@ -570,19 +571,24 @@ const fbApp=initializeApp({apiKey:"AIzaSyBPgjVFKrP80qX_hlfUFqL168XONfNIBA4",auth
 const fbAuth=getAuth(fbApp), fbDb=getDatabase(fbApp), PRESETS='lustre/presets';
 let presetsCache={};
 const $=id=>document.getElementById(id);
-function updateBulbHint(){const el=$('bulb-hint');if(!el)return;el.textContent=P.bulbMode==='e14'?'→ Trou fileté femelle dans la coupelle + adaptateur double filetage (Ø16 bas · Ø14 haut), montré soulevé pour voir le vissage.':'→ Fausse bougie + flamme (déco, à imprimer).';}
+function updateBulbHint(){const el=$('bulb-hint');if(!el)return;el.textContent=P.bulbMode==='e14'?'→ Trou fileté femelle (coupelle) + adaptateur double filetage Ø16/Ø14, soulevé pour voir le vissage. Visible même si les ampoules sont éteintes.':'→ Fausse bougie + flamme (déco, à imprimer).';}
 function updateXSection(){const el=$('xsection');if(!el)return;
-  const r=P.tubeR,W=200,H=168,cx=100,cy=76,scale=Math.min(56/Math.max(r,5),7),N=120;let pts='';
+  const r=P.tubeR,W=260,H=238,cx=130,cy=98,scale=Math.min(78/Math.max(r,5),9),N=130;let pts='';
   for(let i=0;i<=N;i++){const a=i/N*Math.PI*2,rr=P.flutes?r*(1+0.5*P.fluteDepth*Math.cos(a*P.fluteCount)):r,x=cx+Math.cos(a)*rr*scale,y=cy+Math.sin(a)*rr*scale;pts+=x.toFixed(1)+','+y.toFixed(1)+' ';}
-  const tubeB=cy+r*scale,sw=12*scale,sh=Math.max(4,2.2*scale),sx=cx-sw/2,sy=tubeB+4,dia=(2*r).toFixed(0),depth=(P.fluteDepth*r).toFixed(1);
+  const tubeB=cy+r*scale,chW=12,chD=Math.min(r*0.85,6),cw=chW*scale,cd=chD*scale,cx0=cx-cw/2,cy0=tubeB-cd,sH=2.2*scale,dia=(2*r).toFixed(0),dep=(P.fluteDepth*r).toFixed(1),narrow=(2*r)<(chW+4);
   el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-    <text x="${cx}" y="11" fill="#cd9b4a" font-size="9" text-anchor="middle" font-family="Cinzel,serif" letter-spacing="1.5">COUPE DU BRAS</text>
-    <polygon points="${pts}" fill="rgba(120,160,200,0.16)" stroke="#9bc0e0" stroke-width="1.2"/>
-    <line x1="${cx-r*scale}" y1="${cy}" x2="${cx+r*scale}" y2="${cy}" stroke="#e6c27a" stroke-width="0.7" stroke-dasharray="3 2"/>
-    <text x="${cx}" y="${cy-3}" fill="#e6c27a" font-size="8.5" text-anchor="middle">Ø ${dia} mm</text>
-    <rect x="${sx}" y="${sy}" width="${sw}" height="${sh}" rx="1" fill="rgba(255,220,150,0.55)" stroke="#ffdca0" stroke-width="0.8"/>
-    <text x="${cx}" y="${sy+sh+11}" fill="#ffdca0" font-size="8.5" text-anchor="middle">ruban LED 12 mm</text>
-    ${P.flutes?`<text x="${cx}" y="${H-5}" fill="#9bc0e0" font-size="8" text-anchor="middle">stries : ${P.fluteCount} × ${depth} mm</text>`:`<text x="${cx}" y="${H-5}" fill="#6a6a6a" font-size="8" text-anchor="middle">stries off</text>`}
+    <text x="${cx}" y="14" fill="#cd9b4a" font-size="11.5" text-anchor="middle" font-family="Cinzel,serif" letter-spacing="2">COUPE DU BRAS</text>
+    <polygon points="${pts}" fill="rgba(120,160,200,0.15)" stroke="#9bc0e0" stroke-width="1.4"/>
+    <line x1="${cx-r*scale}" y1="${cy}" x2="${cx+r*scale}" y2="${cy}" stroke="#e6c27a" stroke-width="0.8" stroke-dasharray="4 2"/>
+    <text x="${cx}" y="${cy-5}" fill="#e6c27a" font-size="10.5" text-anchor="middle">Ø ${dia} mm</text>
+    <rect x="${cx0}" y="${cy0}" width="${cw}" height="${cd+2}" fill="#0c0a07" stroke="#ffce7a" stroke-width="1.3"/>
+    <rect x="${cx0+1.5}" y="${tubeB-sH-1}" width="${cw-3}" height="${sH}" rx="1" fill="rgba(255,220,150,0.72)" stroke="#ffdca0" stroke-width="0.6"/>
+    <line x1="${cx0}" y1="${tubeB+13}" x2="${cx0+cw}" y2="${tubeB+13}" stroke="#ffce7a" stroke-width="0.8"/>
+    <line x1="${cx0}" y1="${tubeB+9}" x2="${cx0}" y2="${tubeB+17}" stroke="#ffce7a" stroke-width="0.8"/>
+    <line x1="${cx0+cw}" y1="${tubeB+9}" x2="${cx0+cw}" y2="${tubeB+17}" stroke="#ffce7a" stroke-width="0.8"/>
+    <text x="${cx}" y="${tubeB+28}" fill="#ffce7a" font-size="10.5" text-anchor="middle">canal ruban : ${chW} mm</text>
+    <text x="${cx}" y="${tubeB+43}" fill="#bdbdbd" font-size="9.5" text-anchor="middle">profondeur canal : ${chD.toFixed(1)} mm</text>
+    ${narrow?`<text x="${cx}" y="${H-9}" fill="#ff8a8a" font-size="9.5" text-anchor="middle">⚠ Ø bras trop petit pour 12 mm</text>`:(P.flutes?`<text x="${cx}" y="${H-9}" fill="#9bc0e0" font-size="9.5" text-anchor="middle">stries : ${P.fluteCount} × ${dep} mm</text>`:`<text x="${cx}" y="${H-9}" fill="#6a6a6a" font-size="9.5" text-anchor="middle">stries off</text>`)}
   </svg>`;}
 function refreshEnabled(){
   const grey=(id,c)=>{const el=$(id),r=el&&el.closest('.row');if(r)r.classList.toggle('off',c);};
