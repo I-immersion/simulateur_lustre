@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<!-- LUMIIA — Générateur de Lustre Gothique — v1.6 -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>LUMIIA · Générateur de Lustre</title>
+<meta name="theme-color" content="#0d0b08">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzBkMGIwOCIvPjwvc3ZnPg==">
+<link rel="manifest" href='data:application/manifest+json,{"name":"LUMIIA Générateur de Lustre","short_name":"Lustre","start_url":".","display":"standalone","background_color":"%230d0b08","theme_color":"%230d0b08","icons":[{"src":"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxOTIgMTkyIj48cmVjdCB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgZmlsbD0iIzBkMGIwOCIvPjwvc3ZnPg==","sizes":"192x192","type":"image/svg+xml"}]}'>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Spectral:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<style>
+  :root{--bg:#0d0b08;--panel:#16120c;--edge:#2b2114;--brass:#cd9b4a;--gold:#e6c27a;--ink:#e8ddc7;--dim:#998a6e;--warn:#d9603e}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:'Spectral',Georgia,serif;-webkit-font-smoothing:antialiased}
+  #app{display:flex;height:100vh;width:100vw}
+  #panel{width:344px;min-width:344px;height:100%;background:linear-gradient(180deg,#1a1510,#100c08);border-right:1px solid var(--edge);overflow-y:auto;padding:22px 20px 60px;box-shadow:8px 0 40px rgba(0,0,0,.6);position:relative;z-index:5}
+  #panel::-webkit-scrollbar{width:8px}#panel::-webkit-scrollbar-thumb{background:var(--edge);border-radius:4px}
+  .brand{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+  .brand h1{font-family:'Cinzel',serif;font-weight:700;font-size:18px;letter-spacing:.14em;color:var(--gold)}
+  .ver{font-size:11px;color:var(--dim);font-family:'Cinzel',serif;letter-spacing:.1em}
+  .tag{font-size:12px;color:var(--dim);font-style:italic;margin-bottom:18px;border-bottom:1px solid var(--edge);padding-bottom:14px}
+  .grp{margin-bottom:18px}
+  .grp>.gh{font-family:'Cinzel',serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--brass);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .grp>.gh::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--edge),transparent)}
+  .row{margin-bottom:13px}
+  .row label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink);margin-bottom:5px}
+  .row label .v{color:var(--gold);font-variant-numeric:tabular-nums}
+  input[type=range]{-webkit-appearance:none;width:100%;height:3px;border-radius:2px;background:linear-gradient(90deg,var(--brass),var(--edge));outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--gold);border:2px solid #1a1510;cursor:pointer;box-shadow:0 0 8px rgba(230,194,122,.5)}
+  input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--gold);border:2px solid #1a1510;cursor:pointer}
+  .toggles{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+  .chip{flex:1;min-width:0;text-align:center;font-size:11.5px;padding:8px 6px;border:1px solid var(--edge);border-radius:6px;background:#0f0c08;color:var(--dim);cursor:pointer;transition:.15s;letter-spacing:.03em;font-family:'Cinzel',serif}
+  .chip.on{background:linear-gradient(180deg,#3a2c14,#241a0d);color:var(--gold);border-color:var(--brass);box-shadow:0 0 12px rgba(205,155,74,.25) inset}
+  .hint-txt{font-size:11px;color:var(--dim);line-height:1.45;margin:-2px 0 8px}
+  .swatches{display:flex;gap:7px;margin-top:4px}.sw{flex:1;height:22px;border-radius:5px;cursor:pointer;border:2px solid transparent}.sw.on{border-color:var(--gold)}
+  .tier{margin-bottom:10px}.tier .tl{font-size:11px;color:var(--brass);margin-bottom:5px;font-family:'Cinzel',serif;letter-spacing:.06em}
+  .tier .cells{display:flex;gap:5px}.cell{flex:1;text-align:center;font-size:10px;padding:6px 2px;border:1px solid var(--edge);border-radius:5px;background:#0f0c08;color:var(--dim);cursor:pointer;font-family:'Cinzel',serif}
+  .cell.on{background:#2c2110;color:var(--gold);border-color:var(--brass)}
+  .btn{width:100%;padding:12px;border:1px solid var(--brass);border-radius:7px;background:linear-gradient(180deg,#3a2c14,#1f160b);color:var(--gold);cursor:pointer;font-family:'Cinzel',serif;font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;margin-top:8px;transition:.15s}
+  .btn:hover{background:linear-gradient(180deg,#4a3819,#2a1e0e);box-shadow:0 0 18px rgba(205,155,74,.3)}
+  .btn.ghost{background:#0f0c08;color:var(--dim);border-color:var(--edge)}
+  .readout{font-size:12px;line-height:1.7;color:var(--dim);background:#0f0c08;border:1px solid var(--edge);border-radius:7px;padding:11px 13px}
+  .readout b{color:var(--ink);font-weight:500}.readout .ok{color:var(--gold)}.readout .bad{color:var(--warn)}.readout .led{color:#ffd98a}
+  #stage{flex:1;position:relative;background:radial-gradient(120% 80% at 50% 0%,#241c12,#090705 72%)}
+  #c{display:block;width:100%;height:100%}
+  #hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--dim);letter-spacing:.08em;pointer-events:none;background:rgba(13,11,8,.5);padding:5px 12px;border-radius:20px;border:1px solid var(--edge)}
+  #loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--brass);font-family:'Cinzel',serif;letter-spacing:.2em;font-size:13px}
+  #toast{position:absolute;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);background:#1f160b;border:1px solid var(--brass);color:var(--gold);padding:10px 18px;border-radius:8px;font-size:12.5px;transition:.35s;opacity:0;max-width:80%}
+  #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  @media(max-width:760px){#app{flex-direction:column}#panel{width:100%;min-width:0;height:46%;border-right:none;border-bottom:1px solid var(--edge)}#stage{height:54%}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v1.6</span></div>
+    <div class="tag">Générateur paramétrique gothique — 1 à 2 m</div>
+
+    <div class="grp">
+      <div class="gh">Structure</div>
+      <div class="row"><label>Bras par étage <span class="v" id="lab-arms">8</span></label><input type="range" id="arms" min="3" max="16" step="1" value="8"></div>
+      <div class="row"><label>Étages <span class="v" id="lab-tiers">1</span></label><input type="range" id="tiers" min="1" max="3" step="1" value="1"></div>
+      <div class="row"><label>Hauteur corps <span class="v" id="lab-colH">600 mm</span></label><input type="range" id="colH" min="200" max="1200" step="10" value="600"></div>
+      <div class="row"><label>Galbe colonne <span class="v" id="lab-bulges">3</span></label><input type="range" id="bulges" min="1" max="6" step="1" value="3"></div>
+      <div class="row"><label>Finial (bas) <span class="v" id="lab-finial">1.0</span></label><input type="range" id="finial" min="0.5" max="2.2" step="0.05" value="1"></div>
+      <div class="row"><label>Chaîne suspension <span class="v" id="lab-chain">250 mm</span></label><input type="range" id="chain" min="50" max="700" step="10" value="250"></div>
+    </div>
+
+    <div class="grp">
+      <div class="gh">Bras &amp; coupelles</div>
+      <div class="toggles"><div class="chip on" id="t-armglass">Bras PETG</div></div>
+      <div class="row"><label>Envergure (≈ rayon) <span class="v" id="lab-spread">420 mm</span></label><input type="range" id="spread" min="120" max="950" step="10" value="420"></div>
+      <div class="row"><label>Descente <span class="v" id="lab-droop">180 mm</span></label><input type="range" id="droop" min="0" max="400" step="10" value="180"></div>
+      <div class="row"><label>Remontée <span class="v" id="lab-rise">240 mm</span></label><input type="range" id="rise" min="40" max="400" step="10" value="240"></div>
+      <div class="row"><label>Ø tube bras <span class="v" id="lab-tubeR">12 mm</span></label><input type="range" id="tubeR" min="3" max="25" step="0.5" value="12"></div>
+      <div class="row"><label>Ø coupelle <span class="v" id="lab-cupR">32 mm</span></label><input type="range" id="cupR" min="12" max="70" step="1" value="32"></div>
+      <div class="row"><label>Taille bougie <span class="v" id="lab-candle">1.0</span></label><input type="range" id="candle" min="0.4" max="2.2" step="0.05" value="1"></div>
+      <div class="row"><label>Décalage étages <span class="v" id="lab-taper">0.78</span></label><input type="range" id="taper" min="0.5" max="1" step="0.02" value="0.78"></div>
+    </div>
+
+    <div class="grp">
+      <div class="gh">Style des bras (baroque)</div>
+      <div class="row"><label>Volute de base <span class="v" id="lab-volute">0.0</span></label><input type="range" id="volute" min="0" max="1.5" step="0.05" value="0"></div>
+      <div class="row"><label>Contre-volutes <span class="v" id="lab-underScrolls">1</span></label><input type="range" id="underScrolls" min="0" max="3" step="1" value="1"></div>
+      <div class="row"><label>Renflements <span class="v" id="lab-knuckles">0</span></label><input type="range" id="knuckles" min="0" max="5" step="1" value="0"></div>
+      <div class="row"><label>Sinuosité <span class="v" id="lab-sinuo">0.0</span></label><input type="range" id="sinuo" min="0" max="1" step="0.05" value="0"></div>
+    </div>
+
+    <div class="grp" id="tier-grp" style="display:none">
+      <div class="gh">Réglages par étage</div>
+      <div class="hint-txt">Active/désactive une fonction étage par étage (le bouton global doit être activé).</div>
+      <div id="tier-cfg"></div>
+    </div>
+
+    <div class="grp">
+      <div class="gh">Ailes &amp; membrane</div>
+      <div class="toggles"><div class="chip" id="t-wings">Ailes (membrane)</div></div>
+      <label style="font-size:11.5px;color:var(--dim)">Matière de l'aile</label>
+      <div class="toggles" style="margin-top:4px"><div class="chip on" id="m-petg">PETG translucide</div><div class="chip" id="m-tissu">Tissu</div></div>
+      <div class="hint-txt"><b style="color:var(--ink)">PETG</b> : imprimée, translucide, diffuse la LED. <b style="color:var(--ink)">Tissu</b> : tendue sur une bande d'accroche, mate. (Cliquer une matière active les ailes.)</div>
+      <div class="row"><label>Creux (profondeur) <span class="v" id="lab-wingSag">60 mm</span></label><input type="range" id="wingSag" min="0" max="220" step="5" value="60"></div>
+      <div class="row"><label>Galbe 3D <span class="v" id="lab-wingSpan">1.0</span></label><input type="range" id="wingSpan" min="0.4" max="2" step="0.05" value="1"></div>
+      <div class="row"><label>Festons <span class="v" id="lab-wingScallop">4</span></label><input type="range" id="wingScallop" min="0" max="9" step="1" value="4"></div>
+      <div class="row"><label>Nervures <span class="v" id="lab-wingRibs">2</span></label><input type="range" id="wingRibs" min="0" max="6" step="1" value="2"></div>
+      <label style="font-size:11.5px;color:var(--dim)">Couleur aile</label>
+      <div class="swatches">
+        <div class="sw on" data-c="0x6a2fb0" style="background:#6a2fb0"></div>
+        <div class="sw" data-c="0xb02f6a" style="background:#b02f6a"></div>
+        <div class="sw" data-c="0xe39a3b" style="background:#e39a3b"></div>
+        <div class="sw" data-c="0x2f9bb0" style="background:#2f9bb0"></div>
+        <div class="sw" data-c="0x1c1c22" style="background:#1c1c22"></div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <div class="gh">Ornementation</div>
+      <div class="toggles">
+        <div class="chip on" id="t-bulbs">Flammes</div>
+        <div class="chip on" id="t-drops">Pampilles</div>
+        <div class="chip on" id="t-strip">Strip LED</div>
+      </div>
+      <div class="toggles">
+        <div class="chip on" id="t-crystals">Cristaux</div>
+        <div class="chip" id="t-beads">Perles colonne</div>
+        <div class="chip" id="t-grain">Grain</div>
+      </div>
+      <div class="row"><label>Nb pampilles / bras <span class="v" id="lab-dropCount">2</span></label><input type="range" id="dropCount" min="0" max="4" step="1" value="2"></div>
+      <div class="row"><label>Taille pampilles <span class="v" id="lab-dropSize">1.0</span></label><input type="range" id="dropSize" min="0.5" max="2.2" step="0.05" value="1"></div>
+      <div class="row"><label>Taille ornements <span class="v" id="lab-ornSize">1.0</span></label><input type="range" id="ornSize" min="0.5" max="2" step="0.05" value="1"></div>
+      <div class="row"><label>Taille cristaux <span class="v" id="lab-crystalSize">1.0</span></label><input type="range" id="crystalSize" min="0.4" max="2.4" step="0.05" value="1"></div>
+    </div>
+
+    <div class="grp">
+      <div class="gh">Lumière de la pièce</div>
+      <div class="row"><label>Ambiance <span class="v" id="lab-ambiance">1.00</span></label><input type="range" id="ambiance" min="0.35" max="2.2" step="0.05" value="1"></div>
+      <div class="toggles">
+        <div class="chip" id="t-pieces">Vue pièces</div>
+        <div class="chip" id="t-spin">Rotation</div>
+      </div>
+      <div class="toggles">
+        <div class="chip on" id="b-single">Buse simple</div>
+        <div class="chip" id="b-dual">Buse double</div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <div class="gh">Fabrication</div>
+      <div class="readout" id="readout">…</div>
+      <button class="btn" id="exp-all">Exporter STL complet</button>
+      <button class="btn ghost" id="exp-pieces">Exporter pièces (.zip)</button>
+    </div>
+  </aside>
+  <main id="stage">
+    <canvas id="c"></canvas>
+    <div id="loading">CHARGEMENT…</div>
+    <div id="hint">glisser&nbsp;: orbite · molette&nbsp;: zoom · clic droit&nbsp;: déplacer</div>
+    <div id="toast"></div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const VERSION='v1.6';
+const BED={single:[325,320,325],dual:[300,320,325]};
+const LED_SPACING=1000/60, STRIP_W=12, BAND_H=10;
+const P={arms:8,tiers:1,colH:600,bulges:3,finial:1,chain:250,
+  armGlass:true,spread:420,droop:180,rise:240,tubeR:12,cupR:32,candle:1,taper:0.78,
+  volute:0,knuckles:0,underScrolls:1,sinuo:0,
+  wings:false,wingMode:'petg',wingSag:60,wingSpan:1,wingScallop:4,wingRibs:2,wingColor:0x6a2fb0,
+  bulbs:true,drops:true,strip:true,crystals:true,beads:false,grain:false,
+  dropCount:2,dropSize:1,ornSize:1,crystalSize:1,
+  ambiance:1,pieces:false,spin:false,bed:'single'};
+// config par étage (master global ET cette case doivent être actives)
+const tierCfg=[0,1,2].map(()=>({wings:true,strip:true,bulbs:true,crystals:true}));
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+let RNG=mulberry32(1337);
+let draft=false, needsRender=true;
+function R(){needsRender=true;}
+
+const canvas=document.getElementById('c');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1;
+const scene=new THREE.Scene();scene.fog=new THREE.FogExp2(0x090705,0.0003);
+const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(new RoomEnvironment(),0.04).texture;
+const camera=new THREE.PerspectiveCamera(45,1,1,12000);camera.position.set(1300,250,1550);
+const controls=new OrbitControls(camera,canvas);controls.enableDamping=true;controls.dampingFactor=0.08;controls.target.set(0,400,0);
+controls.addEventListener('change',R);
+scene.add(new THREE.HemisphereLight(0x6b5836,0x140f08,0.45));
+const key=new THREE.DirectionalLight(0xffe6b8,0.8);key.position.set(600,1000,600);scene.add(key);
+const fill=new THREE.DirectionalLight(0x8fb4ff,0.2);fill.position.set(-600,400,-400);scene.add(fill);
+const ceil=new THREE.Mesh(new THREE.CircleGeometry(3000,48),new THREE.MeshStandardMaterial({color:0x16110a,roughness:1,side:THREE.DoubleSide}));
+ceil.rotation.x=Math.PI/2;scene.add(ceil);
+
+function makeGrain(){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
+  const im=x.createImageData(256,256);for(let i=0;i<im.data.length;i+=4){const v=170+Math.random()*80;im.data[i]=im.data[i+1]=im.data[i+2]=v;im.data[i+3]=255;}
+  x.putImageData(im,0,0);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(8,8);return t;}
+const grainTex=makeGrain();
+
+const matColumn=new THREE.MeshStandardMaterial({color:0x4a3a22,metalness:0.92,roughness:0.4,envMapIntensity:1.1});
+const matArm   =new THREE.MeshStandardMaterial({color:0x5a4528,metalness:0.9,roughness:0.42,envMapIntensity:1.1});
+const matBand  =new THREE.MeshStandardMaterial({color:0x5a4528,metalness:0.9,roughness:0.45,side:THREE.DoubleSide});
+const matArmGlass=new THREE.MeshPhysicalMaterial({color:0xcfeaff,transmission:0.9,roughness:0.12,ior:1.5,thickness:10,transparent:true,clearcoat:0.25,clearcoatRoughness:0.1,envMapIntensity:1});
+const matArmGlassDraft=new THREE.MeshStandardMaterial({color:0xbfe0ff,transparent:true,opacity:0.32,roughness:0.25,metalness:0});
+const matCup   =new THREE.MeshStandardMaterial({color:0x7a5e30,metalness:0.85,roughness:0.36,envMapIntensity:1.1});
+const matCream =new THREE.MeshStandardMaterial({color:0xfff3d6,metalness:0,roughness:0.6,emissive:0x140f06});
+const matFlame =new THREE.MeshStandardMaterial({color:0xffd98a,emissive:0xffab38,emissiveIntensity:2.2,roughness:0.4,transparent:true,opacity:0.95});
+const matLed   =new THREE.MeshStandardMaterial({color:0xfff0cf,emissive:0xffdca0,emissiveIntensity:2.8,roughness:0.5});
+const matDrop  =new THREE.MeshPhysicalMaterial({color:0x140a1c,metalness:0.3,roughness:0.12,transmission:0.4,ior:1.5,thickness:6,transparent:true,opacity:0.9});
+const matCrystal=new THREE.MeshPhysicalMaterial({color:0xeaf0ff,metalness:0,roughness:0.04,transmission:0.93,ior:1.55,thickness:12,transparent:true,flatShading:true,clearcoat:0.4,clearcoatRoughness:0.08,attenuationColor:0xfff0e0,attenuationDistance:90,envMapIntensity:1.25});
+const matRock=new THREE.MeshStandardMaterial({color:0x8a7a64,roughness:1,metalness:0,flatShading:true});
+let matWing=makeWingMat();
+function makeWingMat(){
+  if(P.wingMode==='tissu') return new THREE.MeshStandardMaterial({color:P.wingColor,roughness:0.95,metalness:0,side:THREE.DoubleSide,transparent:true,opacity:0.93,emissive:P.wingColor,emissiveIntensity:0.14});
+  return new THREE.MeshPhysicalMaterial({color:P.wingColor,transmission:0.55,roughness:0.3,ior:1.5,thickness:4,transparent:true,side:THREE.DoubleSide,emissive:P.wingColor,emissiveIntensity:0.5,attenuationColor:P.wingColor,attenuationDistance:200,envMapIntensity:1});
+}
+const PALETTE=[0xe6c27a,0x7ec8e3,0xe37e9c,0x9ce37e,0xb47ee3,0xe39a7e,0x7ee3c0,0xc8c87e];
+function applyGrain(){[matColumn,matArm,matCup,matBand].forEach(m=>{m.roughnessMap=P.grain?grainTex:null;m.bumpMap=P.grain?grainTex:null;m.bumpScale=P.grain?0.7:0;m.needsUpdate=true;});R();}
+function tubeMat(){return P.armGlass?(draft?matArmGlassDraft:matArmGlass):matArm;}
+
+let root=new THREE.Group();scene.add(root);let printParts=[];
+const LED={count:0,len:0};
+
+function rf(t){
+  if(t<0.02)return (t/0.02)*5*P.finial;
+  if(t<0.17){const a=(t-0.02)/0.15;return (5+22*Math.sin(a*Math.PI))*P.finial;}
+  if(t<0.24)return 7;
+  if(t<0.80){const u=(t-0.24)/0.56;let r=10+6*Math.abs(Math.sin(u*Math.PI*P.bulges));if(Math.abs(u-0.5)<0.06)r+=7;return r;}
+  if(t<0.90){const a=(t-0.80)/0.10;return 10+a*18;}
+  if(t<0.97){const a=(t-0.90)/0.07;return 28-a*21;}
+  const a=(t-0.97)/0.03;return 7-a*2;
+}
+function columnProfile(){const h=P.colH,N=160,pts=[new THREE.Vector2(0,0)];
+  for(let i=0;i<=N;i++){const t=i/N;pts.push(new THREE.Vector2(Math.max(rf(t),0.8),t*h));}pts.push(new THREE.Vector2(0,h));return pts;}
+function shaftRadius(y){const t=Math.min(Math.max(y/P.colH,0),1);
+  if(t<0.80)return 10+6*Math.abs(Math.sin(((t-0.24)/0.56)*Math.PI*P.bulges));
+  if(t<0.90)return 10+((t-0.80)/0.10)*18;return 16;}
+function buildCollar(tierY,outerR){const m=new THREE.Mesh(new THREE.LatheGeometry([
+  new THREE.Vector2(shaftRadius(tierY)-0.5,-8),new THREE.Vector2(outerR,-4),new THREE.Vector2(outerR*0.97,9),
+  new THREE.Vector2(outerR*0.78,15),new THREE.Vector2(shaftRadius(tierY),16)],40),matColumn);m.position.y=tierY;return m;}
+function buildCanopy(yCan){const g=new THREE.Group();
+  const dome=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(48,2),new THREE.Vector2(54,10),
+    new THREE.Vector2(42,22),new THREE.Vector2(14,27),new THREE.Vector2(0,27)],36),matColumn);dome.position.y=yCan;g.add(dome);
+  const stub=new THREE.Mesh(new THREE.CylinderGeometry(9,9,18,16),matColumn);stub.position.y=yCan+34;g.add(stub);return g;}
+function buildChain(yTop,yCan){const g=new THREE.Group();const link=22;const n=Math.max(2,Math.round((yCan-yTop-10)/(link-7)));
+  let y=yTop+8;for(let i=0;i<n;i++){const t=new THREE.Mesh(new THREE.TorusGeometry(11,3,8,18),matColumn);t.position.y=y;if(i%2)t.rotation.y=Math.PI/2;mark(t,true);g.add(t);y+=link-7;}return g;}
+
+function crystalPoint(rad,len,tip){const g=new THREE.Group();
+  const pr=new THREE.Mesh(new THREE.CylinderGeometry(rad,rad*0.94,len,6,1),matCrystal);pr.rotation.y=Math.PI/6;pr.position.y=len/2;g.add(pr);
+  const tp=new THREE.Mesh(new THREE.CylinderGeometry(0.001,rad,tip,6,1),matCrystal);tp.rotation.y=Math.PI/6;tp.position.y=len+tip/2;g.add(tp);return g;}
+function crystalCluster(scale,n,withRock){const g=new THREE.Group();const up=new THREE.Vector3(0,1,0);
+  if(withRock){const r=new THREE.Mesh(new THREE.IcosahedronGeometry(scale*0.5,0),matRock);g.add(r);}
+  for(let i=0;i<n;i++){const s=scale*(0.4+RNG()*0.9);
+    const cp=crystalPoint(s*0.16,s*1.5,s*0.55);
+    const az=RNG()*Math.PI*2,out=0.25+RNG()*0.85;
+    const dir=new THREE.Vector3(Math.cos(az)*out,1,Math.sin(az)*out).normalize();
+    cp.quaternion.setFromUnitVectors(up,dir);
+    const rr=scale*0.4*RNG();cp.position.set(Math.cos(az)*rr,0,Math.sin(az)*rr);g.add(cp);}
+  g.traverse(o=>mark(o,true));return g;}
+
+function spiralCurl(scale,turns,dir){const pts=[],N=40;
+  for(let i=0;i<=N;i++){const u=i/N,ang=u*turns*Math.PI*2,r=scale*(1-u*0.8);
+    pts.push(new THREE.Vector3(Math.cos(ang)*r,Math.sin(ang)*r*dir-scale,0));}
+  return new THREE.CatmullRomCurve3(pts,false,'catmullrom',0.5);}
+function armCurve(hubR){const s=P.spread,d=P.droop,r=P.rise,w=P.sinuo;
+  return new THREE.CatmullRomCurve3([new THREE.Vector3(hubR,0,0),new THREE.Vector3(hubR+s*0.34,-d*0.55+w*d*0.35,0),
+    new THREE.Vector3(hubR+s*0.74,-d,0),new THREE.Vector3(hubR+s*0.95,-d*0.16-w*r*0.3,0),
+    new THREE.Vector3(hubR+s*0.88,r*0.55,0),new THREE.Vector3(hubR+s*0.82,r,0)],false,'catmullrom',0.5);}
+function wingLowPoint(p,t){const sag=P.wingSag*Math.sin(t*Math.PI);
+  const sc=P.wingScallop>0?(P.wingSag*0.12)*Math.abs(Math.sin(t*Math.PI*P.wingScallop)):0;
+  const billow=(P.wingSpan-1)*P.wingSag*0.8*Math.sin(t*Math.PI);
+  return new THREE.Vector3(p.x*0.985,p.y-sag-sc,p.z+billow);}
+function ribbon(top,bot,mat){const pos=[],idx=[];top.forEach(v=>pos.push(v.x,v.y,v.z));bot.forEach(v=>pos.push(v.x,v.y,v.z));
+  const B=top.length;for(let i=0;i<top.length-1;i++){idx.push(i,B+i,i+1,B+i,B+i+1,i+1);}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setIndex(idx);geo.computeVertexNormals();
+  return new THREE.Mesh(geo,mat);}
+function wingMesh(curve){const steps=28,top=[],bot=[];
+  for(let i=0;i<=steps;i++){const t=i/steps,p=curve.getPoint(t);top.push(p.clone());bot.push(wingLowPoint(p,t));}
+  return ribbon(top,bot,matWing);}
+function attachBand(curve){const steps=44,top=[],bot=[];
+  for(let i=0;i<=steps;i++){const p=curve.getPoint(i/steps);top.push(p.clone());bot.push(new THREE.Vector3(p.x,p.y-BAND_H,p.z));}
+  return ribbon(top,bot,matBand);}
+function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR);const base=curve.getPoint(0),tip=curve.getPoint(1);const O=P.ornSize;
+  const peg=new THREE.Mesh(new THREE.CylinderGeometry(P.tubeR*1.05,P.tubeR*1.25,P.tubeR*2.6,14),matArm);peg.rotation.z=Math.PI/2;peg.position.set(hubR-P.tubeR,0,0);g.add(peg);
+  const boss=new THREE.Mesh(new THREE.SphereGeometry(P.tubeR*1.8*O,18,14),matArm);boss.position.copy(base);g.add(boss);
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(curve,90,P.tubeR,16,false),tubeMat()));
+  // contre-volutes baroques sous le bras
+  for(let k=0;k<P.underScrolls;k++){const t=0.25+(P.underScrolls>1?k/(P.underScrolls-1):0)*0.48;const p=curve.getPoint(t);const sc=P.spread*0.13;
+    const c=new THREE.CatmullRomCurve3([p.clone(),new THREE.Vector3(p.x+sc*0.4,p.y-sc*0.6,0),
+      new THREE.Vector3(p.x-sc*0.1,p.y-sc*1.0,0),new THREE.Vector3(p.x+sc*0.5,p.y-sc*1.12,0)],false,'catmullrom',0.5);
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(c,32,P.tubeR*0.62*O,10,false),matArm));}
+  // volute spiralée à la base (rinceau)
+  if(P.volute>0){const sc=P.volute*Math.min(P.spread*0.16,90);
+    const m=new THREE.Mesh(new THREE.TubeGeometry(spiralCurl(sc,1.5,-1),52,P.tubeR*0.6,10,false),matArm);
+    m.position.set(base.x+sc*0.5,base.y-sc*0.2,0);g.add(m);}
+  // renflements (knuckles) le long du bras
+  for(let k=1;k<=P.knuckles;k++){const t=k/(P.knuckles+1);const p=curve.getPoint(t),tn=curve.getTangent(t).normalize();
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(P.tubeR*1.5*O,P.tubeR*0.5*O,8,16),matArm);
+    ring.position.copy(p);ring.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),tn);g.add(ring);}
+  const nt=new THREE.Mesh(new THREE.SphereGeometry(P.tubeR*1.25*O,16,12),matArm);nt.position.copy(tip);g.add(nt);
+  const cup=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(P.tubeR*0.9,0),new THREE.Vector2(P.cupR*0.5,3),
+    new THREE.Vector2(P.cupR,15),new THREE.Vector2(P.cupR*0.92,19),new THREE.Vector2(P.tubeR*1.1,8),new THREE.Vector2(0,8)],30),matCup);cup.position.copy(tip);g.add(cup);
+  if(cfg.wings){g.add(wingMesh(curve));
+    if(P.wingMode==='tissu')g.add(attachBand(curve)); // bande d'accroche 10mm (colle tissu + consolide)
+    for(let k=1;k<=P.wingRibs;k++){const t=k/(P.wingRibs+1);const p=curve.getPoint(t);
+      g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.LineCurve3(p,wingLowPoint(p,t)),2,P.tubeR*0.38,8,false),matArm));}}
+  if(cfg.strip){const L=curve.getLength();const n=Math.max(2,Math.round(L/LED_SPACING));
+    const im=new THREE.InstancedMesh(new THREE.SphereGeometry(Math.max(P.tubeR*0.32,1.6),6,5),matLed,n);
+    const pts=curve.getSpacedPoints(n-1);const m=new THREE.Matrix4();
+    pts.forEach((p,i)=>{m.makeTranslation(p.x,p.y-P.tubeR*0.5,p.z);im.setMatrixAt(i,m);});
+    im.instanceMatrix.needsUpdate=true;mark(im,true);g.add(im);LED.count+=n;LED.len+=L;}
+  if(P.drops&&P.dropCount>0){for(let k=0;k<P.dropCount;k++){const t=0.45+(P.dropCount>1?k/(P.dropCount-1):0.5)*0.42;const p=curve.getPoint(t);const ds=P.dropSize;
+    const lk=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,14*ds,6),matArm);lk.position.set(p.x,p.y-7*ds,p.z);mark(lk,true);g.add(lk);
+    const dp=new THREE.Mesh(new THREE.OctahedronGeometry(P.cupR*0.32*ds,0),matDrop);dp.scale.y=1.8;dp.position.set(p.x,p.y-(16+P.cupR*0.32*ds*1.8)*1,p.z);mark(dp,true);g.add(dp);}}
+  if(cfg.crystals){const cl=crystalCluster(P.cupR*0.55*P.crystalSize,3,false);cl.position.set(tip.x,tip.y+2,tip.z);g.add(cl);}
+  if(cfg.bulbs){const c=P.candle,cr=4.6*c,ch=46*c;
+    const candle=new THREE.Mesh(new THREE.CylinderGeometry(cr*0.82,cr,ch,14),matCream);candle.position.set(tip.x,tip.y+8+ch/2,tip.z);mark(candle,true);g.add(candle);
+    const flame=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(3.2*c,3*c),new THREE.Vector2(2.6*c,7*c),new THREE.Vector2(1.3*c,12*c),new THREE.Vector2(0,16.5*c)],14),matFlame);
+    flame.position.set(tip.x,tip.y+8+ch,tip.z);mark(flame,true);g.add(flame);
+    const pl=new THREE.PointLight(0xffbb55,9,700,2);pl.position.set(tip.x,tip.y+8+ch+8*c,tip.z);g.add(pl);}
+  return {group:g};}
+function mark(o,d){o.userData.displayOnly=!!d;}
+
+function rebuild(){
+  scene.remove(root);root.traverse(o=>{if(o.geometry)o.geometry.dispose();});
+  root=new THREE.Group();scene.add(root);printParts=[];LED.count=0;LED.len=0;RNG=mulberry32(1337);
+  const yTop=P.colH,yCan=P.colH+P.chain;ceil.position.y=yCan+34;controls.target.y=yCan/2;
+  const corps=new THREE.Group();corps.add(new THREE.Mesh(new THREE.LatheGeometry(columnProfile(),48),matColumn));
+  if(P.beads){for(let b=0;b<5;b++){const y=P.colH*(0.28+b*0.11);const rad=shaftRadius(y);
+    const bead=new THREE.Mesh(new THREE.TorusGeometry(rad+2.5,3.2*P.ornSize,10,24),matColumn);bead.rotation.x=Math.PI/2;bead.position.y=y;corps.add(bead);}}
+  const tierData=[];
+  for(let ti=0;ti<P.tiers;ti++){const tierY=P.colH*(0.55+ti*0.13),outerR=shaftRadius(tierY)+16;
+    corps.add(buildCollar(tierY,outerR));tierData.push({ti,tierY,outerR,off:(ti%2)?Math.PI/P.arms:0,k:Math.pow(P.taper,ti)});}
+  root.add(corps);printParts.push({name:'corps_central',obj:corps});
+  const canopy=buildCanopy(yCan);root.add(canopy);printParts.push({name:'rosace_plafond',obj:canopy});
+  root.add(buildChain(yTop,yCan));
+  if(P.crystals&&!draft){const amas=crystalCluster(110*P.crystalSize,11,true);amas.rotation.x=Math.PI;amas.position.y=P.colH*0.02;root.add(amas);}
+  let n=0;
+  tierData.forEach(td=>{const s0=P.spread,d0=P.droop,r0=P.rise;P.spread=s0*td.k;P.droop=d0*td.k;P.rise=r0*td.k;
+    const tc=tierCfg[td.ti];
+    const cfg={wings:P.wings&&tc.wings&&!draft, strip:P.strip&&tc.strip, bulbs:P.bulbs&&tc.bulbs, crystals:P.crystals&&tc.crystals&&!draft};
+    const hubR=td.outerR-4;
+    for(let i=0;i<P.arms;i++){const a=buildArm(hubR,cfg);a.group.position.y=td.tierY;a.group.rotation.y=td.off+i*(Math.PI*2/P.arms);
+      root.add(a.group);printParts.push({name:`bras_e${td.ti+1}_${++n}`,obj:a.group});}
+    P.spread=s0;P.droop=d0;P.rise=r0;});
+  applyGrain();applyView();updateReadout();R();}
+
+function applyView(){
+  if(P.pieces){printParts.forEach((p,idx)=>{const c=PALETTE[idx%PALETTE.length];
+    p.obj.traverse(o=>{if(o.isMesh&&!o.userData.displayOnly&&o.material!==matWing&&o.material!==matCrystal){
+      o.userData._m=o.userData._m||o.material;o.material=new THREE.MeshStandardMaterial({color:c,metalness:0.4,roughness:0.6});}});});}
+  else{printParts.forEach(p=>p.obj.traverse(o=>{if(o.isMesh&&o.userData._m)o.material=o.userData._m;}));}R();}
+
+function bbox(o){return new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());}
+function fitsBed(s){const b=[...BED[P.bed]].sort((a,b)=>b-a);const d=[s.x,s.y,s.z].sort((a,b)=>b-a);return d[0]<=b[0]-10&&d[1]<=b[1]-10&&d[2]<=b[2]-10;}
+function updateReadout(){const w=bbox(root);const dia=(Math.max(w.x,w.z)/1000).toFixed(2),hgt=(w.y/1000).toFixed(2);
+  const over=printParts.filter(p=>!fitsBed(bbox(p.obj))).map(p=>p.name);
+  const bedTxt=P.bed==='single'?'325·320·325':'300·320·325';
+  let h=`Hors-tout&nbsp;: <b>Ø ${dia} m × H ${hgt} m</b><br>`+
+    `Pièces imprimées&nbsp;: <b>${printParts.length}</b> <span style="color:#998a6e">(corps + rosace + ${printParts.length-2} bras)</span><br>`;
+  if(P.strip){h+=`<span class="led">Strip LED 60/m&nbsp;: ${LED.count} LEDs · ${(LED.len/1000).toFixed(2)} m de ruban</span><br>`;
+    if(P.tubeR*2<STRIP_W+4)h+=`<span class="bad">⚠ Ø bras ${(P.tubeR*2).toFixed(0)} mm &lt; ruban 12 mm + paroi</span><br>`;}
+  h+=`Plateau H2D&nbsp;: <b>${bedTxt} mm</b><br>`;
+  h+=over.length===0?`<span class="ok">✓ chaque pièce passe au plateau</span>`
+    :`<span class="bad">⚠ ${over.length} pièce(s) &gt; plateau</span><br><span style="color:#998a6e">découpe des bras en segments à venir (v1.6)</span>`;
+  document.getElementById('readout').innerHTML=h;}
+
+const exporter=new STLExporter();
+function dl(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
+function recentered(obj){const c=obj.clone(true),w=new THREE.Group();w.add(c);w.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(w),ctr=b.getCenter(new THREE.Vector3());c.position.sub(new THREE.Vector3(ctr.x,b.min.y,ctr.z));w.updateMatrixWorld(true);return w;}
+function stripDisplay(o){const k=[];o.traverse(x=>{if(x.isLight||x.userData.displayOnly)k.push(x);});k.forEach(x=>x.parent&&x.parent.remove(x));}
+function exportAll(){const w=recentered(root);stripDisplay(w);dl(new Blob([exporter.parse(w,{binary:true})],{type:'application/octet-stream'}),'lustre_complet.stl');toast('STL complet exporté');}
+async function exportPieces(){if(!window.JSZip){toast('JSZip indisponible (hors-ligne ?)');return;}const zip=new JSZip();
+  printParts.forEach(p=>{const w=recentered(p.obj);stripDisplay(w);zip.file(`${p.name}.stl`,exporter.parse(w,{binary:true}));});
+  dl(await zip.generateAsync({type:'blob'}),'lustre_pieces.zip');toast(`${printParts.length} pièces → .zip`);}
+let toastT;function toast(m){const e=document.getElementById('toast');e.textContent=m;e.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>e.classList.remove('show'),2200);}
+
+// ---- config par étage ----
+const TIER_FEATS=[['wings','Ailes'],['strip','LED'],['bulbs','Flammes'],['crystals','Cristaux']];
+function renderTierCfg(){const grp=document.getElementById('tier-grp');
+  if(P.tiers<2){grp.style.display='none';return;}grp.style.display='block';
+  const names=['bas','milieu','haut'];let html='';
+  for(let ti=0;ti<P.tiers;ti++){const lbl=P.tiers===2?(ti===0?'bas':'haut'):names[ti];
+    html+=`<div class="tier"><div class="tl">Étage ${ti+1} (${lbl})</div><div class="cells">`+
+      TIER_FEATS.map(([k,n])=>`<div class="cell ${tierCfg[ti][k]?'on':''}" onclick="toggleTier(${ti},'${k}')">${n}</div>`).join('')+`</div></div>`;}
+  document.getElementById('tier-cfg').innerHTML=html;}
+window.toggleTier=(ti,k)=>{tierCfg[ti][k]=!tierCfg[ti][k];renderTierCfg();sched();};
+
+const sliders=[['arms','arms',0,''],['tiers','tiers',0,''],['colH','colH',0,' mm'],['bulges','bulges',0,''],['finial','finial',2,''],['chain','chain',0,' mm'],
+  ['spread','spread',0,' mm'],['droop','droop',0,' mm'],['rise','rise',0,' mm'],['tubeR','tubeR',1,' mm'],['cupR','cupR',0,' mm'],['candle','candle',2,''],['taper','taper',2,''],
+  ['wingSag','wingSag',0,' mm'],['wingSpan','wingSpan',2,''],['wingScallop','wingScallop',0,''],['wingRibs','wingRibs',0,''],
+  ['dropCount','dropCount',0,''],['dropSize','dropSize',2,''],['ornSize','ornSize',2,''],['crystalSize','crystalSize',2,''],
+  ['volute','volute',2,''],['underScrolls','underScrolls',0,''],['knuckles','knuckles',0,''],['sinuo','sinuo',2,'']];
+let raf=null,dragTimer=null;function sched(){if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(rebuild);}
+function onParamChange(){draft=true;sched();clearTimeout(dragTimer);dragTimer=setTimeout(()=>{draft=false;sched();},280);}
+sliders.forEach(([id,key,dec,unit])=>{const el=document.getElementById(id),lab=document.getElementById('lab-'+id);
+  el.addEventListener('input',()=>{P[key]=dec?parseFloat(el.value):parseInt(el.value);lab.textContent=(dec?P[key].toFixed(dec):P[key])+unit;
+    if(key==='tiers')renderTierCfg();onParamChange();});});
+document.getElementById('ambiance').addEventListener('input',e=>{P.ambiance=parseFloat(e.target.value);renderer.toneMappingExposure=P.ambiance;document.getElementById('lab-ambiance').textContent=P.ambiance.toFixed(2);R();});
+function chip(id,fn){document.getElementById(id).addEventListener('click',fn);}
+chip('t-armglass',e=>{P.armGlass=!P.armGlass;e.target.classList.toggle('on',P.armGlass);sched();});
+chip('t-wings',e=>{P.wings=!P.wings;e.target.classList.toggle('on',P.wings);sched();});
+function pickMode(mode){P.wingMode=mode;document.getElementById('m-petg').classList.toggle('on',mode==='petg');document.getElementById('m-tissu').classList.toggle('on',mode==='tissu');
+  if(!P.wings){P.wings=true;document.getElementById('t-wings').classList.add('on');}matWing=makeWingMat();sched();}
+chip('m-petg',()=>pickMode('petg'));chip('m-tissu',()=>pickMode('tissu'));
+chip('t-bulbs',e=>{P.bulbs=!P.bulbs;e.target.classList.toggle('on',P.bulbs);sched();});
+chip('t-drops',e=>{P.drops=!P.drops;e.target.classList.toggle('on',P.drops);sched();});
+chip('t-strip',e=>{P.strip=!P.strip;e.target.classList.toggle('on',P.strip);sched();});
+chip('t-crystals',e=>{P.crystals=!P.crystals;e.target.classList.toggle('on',P.crystals);sched();});
+chip('t-beads',e=>{P.beads=!P.beads;e.target.classList.toggle('on',P.beads);sched();});
+chip('t-grain',e=>{P.grain=!P.grain;e.target.classList.toggle('on',P.grain);applyGrain();});
+chip('t-pieces',e=>{P.pieces=!P.pieces;e.target.classList.toggle('on',P.pieces);applyView();});
+chip('t-spin',e=>{P.spin=!P.spin;e.target.classList.toggle('on',P.spin);R();});
+chip('b-single',e=>{P.bed='single';e.target.classList.add('on');document.getElementById('b-dual').classList.remove('on');updateReadout();});
+chip('b-dual',e=>{P.bed='dual';e.target.classList.add('on');document.getElementById('b-single').classList.remove('on');updateReadout();});
+document.querySelectorAll('.sw').forEach(sw=>sw.addEventListener('click',()=>{document.querySelectorAll('.sw').forEach(s=>s.classList.remove('on'));sw.classList.add('on');
+  P.wingColor=parseInt(sw.dataset.c);matWing=makeWingMat();sched();}));
+document.getElementById('exp-all').addEventListener('click',exportAll);
+document.getElementById('exp-pieces').addEventListener('click',exportPieces);
+
+function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==w*devicePixelRatio||canvas.height!==h*devicePixelRatio){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();R();}}
+function loop(){requestAnimationFrame(loop);resize();if(P.spin){root.rotation.y+=0.004;R();}
+  const moved=controls.update();
+  if(moved||needsRender){renderer.render(scene,camera);needsRender=false;}}
+renderTierCfg();rebuild();document.getElementById('loading').style.display='none';loop();
+</script>
+</body>
+</html>
