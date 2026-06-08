@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- LUMIIA — Générateur de Lustre Gothique — v2.5 -->
+<!-- LUMIIA — Générateur de Lustre Gothique — v2.6 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -73,7 +73,7 @@
 <body>
 <div id="app">
   <aside id="panel">
-    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.5</span></div>
+    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.6</span></div>
     <div class="tag">Générateur paramétrique gothique — 1 à 2 m</div>
 
     <div class="grp" id="preset-grp">
@@ -112,7 +112,7 @@
       <div class="row"><label>Envergure (≈ rayon) <span class="v" id="lab-spread">420 mm</span></label><input type="range" id="spread" min="120" max="950" step="10" value="420"></div>
       <div class="row"><label>Descente <span class="v" id="lab-droop">180 mm</span></label><input type="range" id="droop" min="0" max="400" step="10" value="180"></div>
       <div class="row"><label>Remontée <span class="v" id="lab-rise">240 mm</span></label><input type="range" id="rise" min="40" max="400" step="10" value="240"></div>
-      <div class="row"><label>Ø tube bras <span class="v" id="lab-tubeR">12 mm</span></label><input type="range" id="tubeR" min="3" max="25" step="0.5" value="12"></div>
+      <div class="row"><label>Ø tube bras <span class="v" id="lab-tubeR">24 mm</span></label><input type="range" id="tubeR" min="6" max="50" step="1" value="24"></div>
       <div class="row"><label>Stries (nb) <span class="v" id="lab-fluteCount">12</span></label><input type="range" id="fluteCount" min="4" max="24" step="1" value="12"></div>
       <div class="row"><label>Profondeur stries <span class="v" id="lab-fluteDepth">0.30</span></label><input type="range" id="fluteDepth" min="0.05" max="0.8" step="0.05" value="0.3"></div>
       <div class="row"><label>Ø coupelle <span class="v" id="lab-cupR">32 mm</span></label><input type="range" id="cupR" min="12" max="70" step="1" value="32"></div>
@@ -210,6 +210,7 @@
       <button class="btn" id="exp-all">Exporter STL complet</button>
       <button class="btn ghost" id="exp-pieces">Exporter pièces (.zip)</button>
       <button class="btn ghost" id="exp-obj">Exporter OBJ (Fusion)</button>
+      <button class="btn ghost" id="exp-armtest">Test coupe bras (2 cm)</button>
     </div>
   </aside>
   <main id="stage">
@@ -231,11 +232,11 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref as dbRef, onValue, set as dbSet, remove as dbRemove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-const VERSION='v2.5';
+const VERSION='v2.6';
 const BED={single:[325,320,325],dual:[300,320,325]};
 const LED_SPACING=1000/60, STRIP_W=12, BAND_H=10;
 const P={arms:8,tiers:1,colH:600,bulges:3,finial:1,chain:250,
-  armGlass:true,spread:420,droop:180,rise:240,tubeR:12,cupR:32,candle:1,taper:0.78,
+  armGlass:true,spread:420,droop:180,rise:240,tubeR:12,tubeDia:24,cupR:32,candle:1,taper:0.78,
   volute:0,knuckles:0,underScrolls:1,sinuo:0,
   tierGap:120,bodyBottom:0,flutes:false,fluteCount:12,fluteDepth:0.3,
   finish:'bronze',bulbMode:'candle',showFabric:true,showCeiling:false,matFinish:'metal',ledChannel:true,
@@ -457,13 +458,13 @@ function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR)
     im.instanceMatrix.needsUpdate=true;mark(im,true);g.add(im);LED.count+=n;LED.len+=L;}
   if(P.drops&&P.dropCount>0){for(let k=0;k<P.dropCount;k++){
     const t=0.42+(P.dropCount>1?k/(P.dropCount-1):0.5)*0.34;const p=curve.getPoint(t);const ds=P.dropSize;
-    const ax=p.x,az=p.z,ay=p.y-P.tubeR-1.5; // ancrage juste sous le tube
-    const hook=new THREE.Mesh(new THREE.TorusGeometry(2.6,0.7,8,14,Math.PI*1.45),matArm);hook.position.set(ax,ay,az);hook.rotation.z=Math.PI;g.add(hook); // petit crochet imprime
-    let ly=ay-3;const nL=4; // petite chaine (maillons alternes)
-    for(let i=0;i<nL;i++){const lk=new THREE.Mesh(new THREE.TorusGeometry(1.7,0.55,6,10),matArm);lk.position.set(ax,ly,az);lk.rotation.x=Math.PI/2;lk.rotation.z=(i%2)?Math.PI/2:0;g.add(lk);ly-=2.6;}
-    const bodyR=Math.min(P.cupR*0.26*ds,P.tubeR*0.85); // borne : jamais plus large que le bras -> ne bouffe pas la forme
-    const drop=new THREE.Group();drop.position.set(ax,ly-1,az); // pampille suspendue bien sous le bras
-    const loop=new THREE.Mesh(new THREE.TorusGeometry(1.8,0.55,8,12),matDrop);loop.rotation.x=Math.PI/2;drop.add(loop);
+    const ax=p.x,az=p.z,ay=p.y-P.tubeR-1; // ancrage a la surface basse du tube
+    const hook=new THREE.Mesh(new THREE.TorusGeometry(2.8,1.0,10,18,Math.PI*1.5),tubeMat());hook.position.set(ax,ay-1,az);hook.rotation.z=Math.PI*0.95;g.add(hook); // crochet PETG IMPRIME DANS LA MASSE (meme matiere que le bras, non demontable)
+    let ly=ay-6;const nL=5; // chaine REELLE (ajoutee a la main) -> ici simple apercu
+    for(let i=0;i<nL;i++){const lk=new THREE.Mesh(new THREE.TorusGeometry(1.7,0.5,6,10),matDrop);lk.position.set(ax,ly,az);lk.rotation.x=Math.PI/2;lk.rotation.z=(i%2)?Math.PI/2:0;mark(lk,true);g.add(lk);ly-=2.6;}
+    const bodyR=Math.min(P.cupR*0.2*ds,P.tubeR*0.55); // bien plus fin que le bras -> ne mange plus le diametre
+    const drop=new THREE.Group();drop.position.set(ax,ly-1,az);
+    const loop=new THREE.Mesh(new THREE.TorusGeometry(1.6,0.5,8,12),matDrop);loop.rotation.x=Math.PI/2;drop.add(loop);
     const body=new THREE.Mesh(new THREE.OctahedronGeometry(bodyR,0),matDrop);body.scale.y=1.9;body.position.y=-(3+bodyR*1.9);drop.add(body);
     mark(drop,true);g.add(drop);}}
   if(cfg.crystals){const cl=crystalCluster(P.cupR*0.55*P.crystalSize,3,false);cl.position.set(tip.x,tip.y+2,tip.z);g.add(cl);}
@@ -486,6 +487,7 @@ function mark(o,d){o.userData.displayOnly=!!d;}
 function rebuild(){
   scene.remove(root);root.traverse(o=>{if(o.geometry)o.geometry.dispose();});
   root=new THREE.Group();scene.add(root);printParts=[];LED.count=0;LED.len=0;RNG=mulberry32(1337);
+  if(P.tubeDia===undefined)P.tubeDia=(P.tubeR||12)*2;P.tubeR=P.tubeDia/2;
   H=P.colH+P.bodyBottom;const yTop=H,yCan=H+P.chain;ceil.position.y=yCan+34;ceil.visible=P.showCeiling;controls.target.y=yCan/2;
   const corps=new THREE.Group();corps.add(new THREE.Mesh(new THREE.LatheGeometry(columnProfile(),48),matColumn));
   if(P.beads){for(let b=0;b<5;b++){const y=H*(0.28+b*0.11);const rad=shaftRadius(y);
@@ -557,7 +559,7 @@ function renderTierCfg(){const grp=document.getElementById('tier-grp');
 window.toggleTier=(ti,k)=>{tierCfg[ti][k]=!tierCfg[ti][k];renderTierCfg();sched();};
 
 const sliders=[['arms','arms',0,''],['tiers','tiers',0,''],['colH','colH',0,' mm'],['bulges','bulges',0,''],['finial','finial',2,''],['chain','chain',0,' mm'],
-  ['spread','spread',0,' mm'],['droop','droop',0,' mm'],['rise','rise',0,' mm'],['tubeR','tubeR',1,' mm'],['cupR','cupR',0,' mm'],['candle','candle',2,''],['taper','taper',2,''],
+  ['spread','spread',0,' mm'],['droop','droop',0,' mm'],['rise','rise',0,' mm'],['tubeR','tubeDia',0,' mm'],['cupR','cupR',0,' mm'],['candle','candle',2,''],['taper','taper',2,''],
   ['wingSag','wingSag',0,' mm'],['wingSpan','wingSpan',2,''],['wingScallop','wingScallop',0,''],['wingRibs','wingRibs',0,''],
   ['dropCount','dropCount',0,''],['dropSize','dropSize',2,''],['ornSize','ornSize',2,''],['crystalSize','crystalSize',2,''],
   ['volute','volute',2,''],['underScrolls','underScrolls',0,''],['knuckles','knuckles',0,''],['sinuo','sinuo',2,''],
@@ -602,7 +604,7 @@ const fbAuth=getAuth(fbApp), fbDb=getDatabase(fbApp), PRESETS='lustre/presets';
 let presetsCache={};
 const $=id=>document.getElementById(id);
 function updateBulbHint(){const el=$('bulb-hint');if(!el)return;el.textContent=P.bulbMode==='e14'?'→ Trou fileté femelle (coupelle) + adaptateur double filetage Ø16/Ø14, soulevé pour voir le vissage. Visible même si les ampoules sont éteintes.':'→ Fausse bougie + flamme (déco, à imprimer).';}
-function updateXSection(){const el=$('xsection');if(!el)return;
+function updateXSection(){const el=$('xsection');if(!el)return;P.tubeR=(P.tubeDia||24)/2;
   const r=P.tubeR,W=260,H=250,cx=130,cy=94,scale=Math.min(76/Math.max(r,5),9),N=130;let pts='';
   for(let i=0;i<=N;i++){const a=i/N*Math.PI*2,rr=P.flutes?r*(1+0.5*P.fluteDepth*Math.cos(a*P.fluteCount)):r,x=cx+Math.cos(a)*rr*scale,y=cy+Math.sin(a)*rr*scale;pts+=x.toFixed(1)+','+y.toFixed(1)+' ';}
   const margin=1.5,strip=12,chW=strip+2*margin,chH=5,wall=Math.max(2.5,r*0.14);
@@ -646,7 +648,17 @@ function buildFinishSwatches(){const c=$('finish-sw');if(!c)return;
   c.querySelectorAll('.sw').forEach(sw=>sw.addEventListener('click',()=>{c.querySelectorAll('.sw').forEach(x=>x.classList.remove('on'));sw.classList.add('on');P.finish=sw.dataset.f;applyFinish();}));}
 const objExporter=new OBJExporter();
 function exportOBJ(){const w=recentered(root);stripDisplay(w);dl(new Blob([objExporter.parse(w)],{type:'text/plain'}),'lustre.obj');toast('OBJ exporté (maillage)');}
+function exportArmTest(){
+  const r=(P.tubeDia||24)/2,N=160,chHalf=Math.min(Math.asin(Math.min(0.95,7.5/Math.max(r,8))),1.15),chD=Math.min(r*0.5,6),a0=-Math.PI/2,pts=[];
+  for(let j=0;j<N;j++){const a=j/N*Math.PI*2;let rr=r*(P.flutes?(1+0.5*P.fluteDepth*Math.cos(a*P.fluteCount)):1);
+    if(P.ledChannel){const da=Math.atan2(Math.sin(a-a0),Math.cos(a-a0));if(Math.abs(da)<chHalf)rr-=chD*Math.cos(da/chHalf*Math.PI/2);}
+    pts.push(new THREE.Vector2(Math.cos(a)*rr,Math.sin(a)*rr));}
+  const geo=new THREE.ExtrudeGeometry(new THREE.Shape(pts),{depth:20,bevelEnabled:false,steps:1});
+  const w=new THREE.Group();w.add(new THREE.Mesh(geo,matArm));w.updateMatrixWorld(true);
+  dl(new Blob([exporter.parse(w,{binary:true})],{type:'application/octet-stream'}),'test_coupe_bras_2cm.stl');
+  toast('Test coupe bras (2 cm) exporté — vérifie Ø + passage LED');}
 $('exp-obj').addEventListener('click',exportOBJ);
+$('exp-armtest').addEventListener('click',exportArmTest);
 function snapshotP(){const o={...P};delete o.pieces;delete o.spin;return o;}
 function syncUI(){
   sliders.forEach(([id,key,dec,unit])=>{const el=$(id);if(!el||P[key]===undefined)return;el.value=P[key];const lab=$('lab-'+id);if(lab)lab.textContent=(dec?(+P[key]).toFixed(dec):P[key])+unit;});
