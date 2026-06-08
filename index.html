@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- LUMIIA — Générateur de Lustre Gothique — v1.8 -->
+<!-- LUMIIA — Générateur de Lustre Gothique — v1.9 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -42,6 +42,10 @@
   .chip{flex:1;min-width:0;text-align:center;font-size:11.5px;padding:8px 6px;border:1px solid var(--edge);border-radius:6px;background:#0f0c08;color:var(--dim);cursor:pointer;transition:.15s;letter-spacing:.03em;font-family:'Cinzel',serif}
   .chip.on{background:linear-gradient(180deg,#3a2c14,#241a0d);color:var(--gold);border-color:var(--brass);box-shadow:0 0 12px rgba(205,155,74,.25) inset}
   .hint-txt{font-size:11px;color:var(--dim);line-height:1.45;margin:-2px 0 8px}
+  .off{opacity:.38;pointer-events:none}
+  #finish-sw{display:flex;flex-wrap:wrap;gap:6px}
+  #finish-sw .sw{flex:0 0 auto;width:30px;height:24px;border-radius:5px;cursor:pointer;border:2px solid transparent}
+  #finish-sw .sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--brass)}
   .swatches{display:flex;gap:7px;margin-top:4px}.sw{flex:1;height:22px;border-radius:5px;cursor:pointer;border:2px solid transparent}.sw.on{border-color:var(--gold)}
   .tier{margin-bottom:10px}.tier .tl{font-size:11px;color:var(--brass);margin-bottom:5px;font-family:'Cinzel',serif;letter-spacing:.06em}
   .tier .cells{display:flex;gap:5px}.cell{flex:1;text-align:center;font-size:10px;padding:6px 2px;border:1px solid var(--edge);border-radius:5px;background:#0f0c08;color:var(--dim);cursor:pointer;font-family:'Cinzel',serif}
@@ -64,7 +68,7 @@
 <body>
 <div id="app">
   <aside id="panel">
-    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v1.8</span></div>
+    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v1.9</span></div>
     <div class="tag">Générateur paramétrique gothique — 1 à 2 m</div>
 
     <div class="grp" id="preset-grp">
@@ -108,6 +112,7 @@
       <div class="row"><label>Profondeur stries <span class="v" id="lab-fluteDepth">0.30</span></label><input type="range" id="fluteDepth" min="0.05" max="0.8" step="0.05" value="0.3"></div>
       <div class="row"><label>Ø coupelle <span class="v" id="lab-cupR">32 mm</span></label><input type="range" id="cupR" min="12" max="70" step="1" value="32"></div>
       <div class="row"><label>Taille bougie <span class="v" id="lab-candle">1.0</span></label><input type="range" id="candle" min="0.4" max="2.2" step="0.05" value="1"></div>
+      <div class="toggles"><div class="chip on" id="bm-candle">Bougie</div><div class="chip" id="bm-e14">Douille E14</div></div>
       <div class="row"><label>Décalage étages <span class="v" id="lab-taper">0.78</span></label><input type="range" id="taper" min="0.5" max="1" step="0.02" value="0.78"></div>
     </div>
 
@@ -164,6 +169,12 @@
     </div>
 
     <div class="grp">
+      <div class="gh">Finition (corps & accessoires)</div>
+      <p class="hint-txt">Couleur du corps + accessoires métal (les bras PETG restent transparents).</p>
+      <div id="finish-sw"></div>
+    </div>
+
+    <div class="grp">
       <div class="gh">Lumière de la pièce</div>
       <div class="row"><label>Ambiance <span class="v" id="lab-ambiance">1.00</span></label><input type="range" id="ambiance" min="0.35" max="2.2" step="0.05" value="1"></div>
       <div class="toggles">
@@ -181,6 +192,7 @@
       <div class="readout" id="readout">…</div>
       <button class="btn" id="exp-all">Exporter STL complet</button>
       <button class="btn ghost" id="exp-pieces">Exporter pièces (.zip)</button>
+      <button class="btn ghost" id="exp-obj">Exporter OBJ (Fusion)</button>
     </div>
   </aside>
   <main id="stage">
@@ -195,18 +207,20 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { STLExporter } from 'three/addons/exporters/STLExporter.js';
+import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref as dbRef, onValue, set as dbSet, remove as dbRemove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-const VERSION='v1.8';
+const VERSION='v1.9';
 const BED={single:[325,320,325],dual:[300,320,325]};
 const LED_SPACING=1000/60, STRIP_W=12, BAND_H=10;
 const P={arms:8,tiers:1,colH:600,bulges:3,finial:1,chain:250,
   armGlass:true,spread:420,droop:180,rise:240,tubeR:12,cupR:32,candle:1,taper:0.78,
   volute:0,knuckles:0,underScrolls:1,sinuo:0,
   tierGap:120,bodyBottom:0,flutes:false,fluteCount:12,fluteDepth:0.3,
+  finish:'bronze',bulbMode:'candle',
   wings:false,wingMode:'petg',wingSag:60,wingSpan:1,wingScallop:4,wingRibs:2,wingColor:0x6a2fb0,
   bulbs:true,drops:true,strip:true,crystals:true,beads:false,grain:false,
   dropCount:2,dropSize:1,ornSize:1,crystalSize:1,
@@ -251,6 +265,22 @@ const matLed   =new THREE.MeshStandardMaterial({color:0xfff0cf,emissive:0xffdca0
 const matDrop  =new THREE.MeshPhysicalMaterial({color:0x140a1c,metalness:0.3,roughness:0.12,transmission:0.4,ior:1.5,thickness:6,transparent:true,opacity:0.9});
 const matCrystal=new THREE.MeshPhysicalMaterial({color:0xeaf0ff,metalness:0,roughness:0.04,transmission:0.93,ior:1.55,thickness:12,transparent:true,flatShading:true,clearcoat:0.4,clearcoatRoughness:0.08,attenuationColor:0xfff0e0,attenuationDistance:90,envMapIntensity:1.25});
 const matRock=new THREE.MeshStandardMaterial({color:0x8a7a64,roughness:1,metalness:0,flatShading:true});
+const matBore=new THREE.MeshStandardMaterial({color:0x0a0a0c,roughness:0.9,metalness:0.2});
+const FINISHES={
+ bronze:{label:'Bronze',color:0x4a3a22,metal:0.92,rough:0.4,sw:'#7a5a2a'},
+ noir:{label:'Noir fer',color:0x1c1c20,metal:0.85,rough:0.5,sw:'#1c1c20'},
+ or:{label:'Or',color:0xc9a23a,metal:0.95,rough:0.25,sw:'#c9a23a'},
+ chrome:{label:'Chrome',color:0xc8ccd2,metal:0.98,rough:0.12,sw:'#c8ccd2'},
+ cuivre:{label:'Cuivre',color:0xb06a3a,metal:0.9,rough:0.3,sw:'#b06a3a'},
+ vdg:{label:'Vert-de-gris',color:0x4a8a76,metal:0.6,rough:0.55,sw:'#4a8a76'},
+ violet:{label:'Violet',color:0x6a2fb0,metal:0.8,rough:0.35,sw:'#6a2fb0'},
+ magenta:{label:'Magenta',color:0xb02f6a,metal:0.8,rough:0.35,sw:'#b02f6a'},
+ bleu:{label:'Bleu nuit',color:0x2f4fb0,metal:0.85,rough:0.3,sw:'#2f4fb0'},
+ rouge:{label:'Rouge',color:0x9a2330,metal:0.8,rough:0.35,sw:'#9a2330'},
+ turquoise:{label:'Turquoise',color:0x2f9bb0,metal:0.85,rough:0.3,sw:'#2f9bb0'}};
+function applyFinish(){const fI=FINISHES[P.finish]||FINISHES.bronze;
+  [matColumn,matArm,matCup,matBand].forEach(m=>{m.color.setHex(fI.color);m.metalness=fI.metal;m.roughness=fI.rough;m.needsUpdate=true;});
+  matDrop.color.setHex(fI.color);R();}
 let matWing=makeWingMat();
 function makeWingMat(){
   if(P.wingMode==='tissu') return new THREE.MeshStandardMaterial({color:P.wingColor,roughness:0.95,metalness:0,side:THREE.DoubleSide,transparent:true,opacity:0.93,emissive:P.wingColor,emissiveIntensity:0.14});
@@ -317,7 +347,7 @@ function armCurve(hubR){const s=P.spread,d=P.droop,r=P.rise,w=P.sinuo;
     new THREE.Vector3(hubR+s*0.74,-d,0),new THREE.Vector3(hubR+s*0.95,-d*0.16-w*r*0.3,0),
     new THREE.Vector3(hubR+s*0.88,r*0.55,0),new THREE.Vector3(hubR+s*0.82,r,0)],false,'catmullrom',0.5);}
 function wingLowPoint(p,t){const sag=P.wingSag*Math.sin(t*Math.PI);
-  const sc=P.wingScallop>0?(P.wingSag*0.12)*Math.abs(Math.sin(t*Math.PI*P.wingScallop)):0;
+  const sc=P.wingScallop>0?(P.wingSag*0.22)*Math.abs(Math.sin(t*Math.PI*P.wingScallop)):0;
   const billow=(P.wingSpan-1)*P.wingSag*0.8*Math.sin(t*Math.PI);
   return new THREE.Vector3(p.x*0.985,p.y-sag-sc,p.z+billow);}
 function ribbon(top,bot,mat){const pos=[],idx=[];top.forEach(v=>pos.push(v.x,v.y,v.z));bot.forEach(v=>pos.push(v.x,v.y,v.z));
@@ -364,11 +394,21 @@ function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR)
     const lk=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,14*ds,6),matArm);lk.position.set(p.x,p.y-7*ds,p.z);mark(lk,true);g.add(lk);
     const dp=new THREE.Mesh(new THREE.OctahedronGeometry(P.cupR*0.32*ds,0),matDrop);dp.scale.y=1.8;dp.position.set(p.x,p.y-(16+P.cupR*0.32*ds*1.8)*1,p.z);mark(dp,true);g.add(dp);}}
   if(cfg.crystals){const cl=crystalCluster(P.cupR*0.55*P.crystalSize,3,false);cl.position.set(tip.x,tip.y+2,tip.z);g.add(cl);}
-  if(cfg.bulbs){const c=P.candle,cr=4.6*c,ch=46*c;
-    const candle=new THREE.Mesh(new THREE.CylinderGeometry(cr*0.82,cr,ch,14),matCream);candle.position.set(tip.x,tip.y+8+ch/2,tip.z);mark(candle,true);g.add(candle);
-    const flame=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(3.2*c,3*c),new THREE.Vector2(2.6*c,7*c),new THREE.Vector2(1.3*c,12*c),new THREE.Vector2(0,16.5*c)],14),matFlame);
-    flame.position.set(tip.x,tip.y+8+ch,tip.z);mark(flame,true);g.add(flame);
-    const pl=new THREE.PointLight(0xffbb55,9,700,2);pl.position.set(tip.x,tip.y+8+ch+8*c,tip.z);g.add(pl);}
+  if(cfg.bulbs){const c=P.candle;
+    if(P.bulbMode==='e14'){
+      const holderR=Math.max(P.cupR*0.5,11),holderH=26,boreR=7; // alesage Ø14 pour douille E14
+      const holder=new THREE.Mesh(new THREE.CylinderGeometry(holderR,holderR*1.1,holderH,24),matCup);holder.position.set(tip.x,tip.y+8+holderH/2,tip.z);g.add(holder);
+      const bore=new THREE.Mesh(new THREE.CylinderGeometry(boreR,boreR,holderH*0.72,20),matBore);bore.position.set(tip.x,tip.y+8+holderH-holderH*0.30,tip.z);g.add(bore);
+      const bulb=new THREE.Mesh(new THREE.SphereGeometry(6.5*c,18,14),matCream);bulb.scale.y=1.35;bulb.position.set(tip.x,tip.y+8+holderH+9*c,tip.z);mark(bulb,true);g.add(bulb);
+      const fl=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(2.4*c,2*c),new THREE.Vector2(1.6*c,5*c),new THREE.Vector2(0,7*c)],12),matFlame);fl.position.set(tip.x,tip.y+8+holderH+18*c,tip.z);mark(fl,true);g.add(fl);
+      const pl=new THREE.PointLight(0xffd08a,9,700,2);pl.position.set(tip.x,tip.y+8+holderH+14*c,tip.z);g.add(pl);
+    } else {
+      const cr=4.6*c,ch=46*c;
+      const candle=new THREE.Mesh(new THREE.CylinderGeometry(cr*0.82,cr,ch,14),matCream);candle.position.set(tip.x,tip.y+8+ch/2,tip.z);mark(candle,true);g.add(candle);
+      const flame=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(3.2*c,3*c),new THREE.Vector2(2.6*c,7*c),new THREE.Vector2(1.3*c,12*c),new THREE.Vector2(0,16.5*c)],14),matFlame);
+      flame.position.set(tip.x,tip.y+8+ch,tip.z);mark(flame,true);g.add(flame);
+      const pl=new THREE.PointLight(0xffbb55,9,700,2);pl.position.set(tip.x,tip.y+8+ch+8*c,tip.z);g.add(pl);
+    }}
   return {group:g};}
 function mark(o,d){o.userData.displayOnly=!!d;}
 
@@ -453,10 +493,10 @@ sliders.forEach(([id,key,dec,unit])=>{const el=document.getElementById(id),lab=d
 document.getElementById('ambiance').addEventListener('input',e=>{P.ambiance=parseFloat(e.target.value);renderer.toneMappingExposure=P.ambiance;document.getElementById('lab-ambiance').textContent=P.ambiance.toFixed(2);R();});
 function chip(id,fn){document.getElementById(id).addEventListener('click',fn);}
 chip('t-armglass',e=>{P.armGlass=!P.armGlass;e.target.classList.toggle('on',P.armGlass);sched();});
-chip('t-flutes',e=>{P.flutes=!P.flutes;e.target.classList.toggle('on',P.flutes);sched();});
-chip('t-wings',e=>{P.wings=!P.wings;e.target.classList.toggle('on',P.wings);sched();});
+chip('t-flutes',e=>{P.flutes=!P.flutes;e.target.classList.toggle('on',P.flutes);refreshEnabled();sched();});
+chip('t-wings',e=>{P.wings=!P.wings;e.target.classList.toggle('on',P.wings);refreshEnabled();sched();});
 function pickMode(mode){P.wingMode=mode;document.getElementById('m-petg').classList.toggle('on',mode==='petg');document.getElementById('m-tissu').classList.toggle('on',mode==='tissu');
-  if(!P.wings){P.wings=true;document.getElementById('t-wings').classList.add('on');}matWing=makeWingMat();sched();}
+  if(!P.wings){P.wings=true;document.getElementById('t-wings').classList.add('on');}matWing=makeWingMat();refreshEnabled();sched();}
 chip('m-petg',()=>pickMode('petg'));chip('m-tissu',()=>pickMode('tissu'));
 chip('t-bulbs',e=>{P.bulbs=!P.bulbs;e.target.classList.toggle('on',P.bulbs);sched();});
 chip('t-drops',e=>{P.drops=!P.drops;e.target.classList.toggle('on',P.drops);sched();});
@@ -484,6 +524,18 @@ const fbApp=initializeApp({apiKey:"AIzaSyBPgjVFKrP80qX_hlfUFqL168XONfNIBA4",auth
 const fbAuth=getAuth(fbApp), fbDb=getDatabase(fbApp), PRESETS='lustre/presets';
 let presetsCache={};
 const $=id=>document.getElementById(id);
+function refreshEnabled(){
+  ['fluteCount','fluteDepth'].forEach(id=>{const r=$(id)&&$(id).closest('.row');if(r)r.classList.toggle('off',!P.flutes);});
+  ['wingSag','wingSpan','wingScallop','wingRibs'].forEach(id=>{const r=$(id)&&$(id).closest('.row');if(r)r.classList.toggle('off',!P.wings);});
+}
+function pickBulb(m){P.bulbMode=m;$('bm-candle').classList.toggle('on',m==='candle');$('bm-e14').classList.toggle('on',m==='e14');sched();}
+chip('bm-candle',()=>pickBulb('candle'));chip('bm-e14',()=>pickBulb('e14'));
+function buildFinishSwatches(){const c=$('finish-sw');if(!c)return;
+  c.innerHTML=Object.entries(FINISHES).map(([k,fI])=>`<div class="sw${k===P.finish?' on':''}" data-f="${k}" title="${fI.label}" style="background:${fI.sw}"></div>`).join('');
+  c.querySelectorAll('.sw').forEach(sw=>sw.addEventListener('click',()=>{c.querySelectorAll('.sw').forEach(x=>x.classList.remove('on'));sw.classList.add('on');P.finish=sw.dataset.f;applyFinish();}));}
+const objExporter=new OBJExporter();
+function exportOBJ(){const w=recentered(root);stripDisplay(w);dl(new Blob([objExporter.parse(w)],{type:'text/plain'}),'lustre.obj');toast('OBJ exporté (maillage)');}
+$('exp-obj').addEventListener('click',exportOBJ);
 function snapshotP(){const o={...P};delete o.pieces;delete o.spin;return o;}
 function syncUI(){
   sliders.forEach(([id,key,dec,unit])=>{const el=$(id);if(!el||P[key]===undefined)return;el.value=P[key];const lab=$('lab-'+id);if(lab)lab.textContent=(dec?(+P[key]).toFixed(dec):P[key])+unit;});
@@ -492,6 +544,8 @@ function syncUI(){
     .forEach(([id,k])=>$(id).classList.toggle('on',!!P[k]));
   $('m-petg').classList.toggle('on',P.wingMode==='petg');$('m-tissu').classList.toggle('on',P.wingMode==='tissu');
   $('b-single').classList.toggle('on',P.bed==='single');$('b-dual').classList.toggle('on',P.bed==='dual');
+  $('bm-candle').classList.toggle('on',P.bulbMode!=='e14');$('bm-e14').classList.toggle('on',P.bulbMode==='e14');
+  buildFinishSwatches();applyFinish();refreshEnabled();
   matWing=makeWingMat();applyGrain();renderTierCfg();rebuild();
 }
 function presetMsg(t){$('preset-msg').textContent=t;}
@@ -519,6 +573,7 @@ $('preset-load').addEventListener('click',()=>{const pr=presetsCache[$('preset-s
 $('preset-del').addEventListener('click',async()=>{const k=$('preset-sel').value;if(!k)return;
   try{await dbRemove(dbRef(fbDb,PRESETS+'/'+k));presetMsg('Supprimé.');}catch(err){presetMsg('Échec : '+(err.code||err.message));}});
 
+buildFinishSwatches();applyFinish();refreshEnabled();
 renderTierCfg();rebuild();document.getElementById('loading').style.display='none';loop();
 </script>
 </body>
