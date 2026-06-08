@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- LUMIIA — Générateur de Lustre Gothique — v2.3 -->
+<!-- LUMIIA — Générateur de Lustre Gothique — v2.4 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -73,7 +73,7 @@
 <body>
 <div id="app">
   <aside id="panel">
-    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.3</span></div>
+    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.4</span></div>
     <div class="tag">Générateur paramétrique gothique — 1 à 2 m</div>
 
     <div class="grp" id="preset-grp">
@@ -223,7 +223,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref as dbRef, onValue, set as dbSet, remove as dbRemove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-const VERSION='v2.3';
+const VERSION='v2.4';
 const BED={single:[325,320,325],dual:[300,320,325]};
 const LED_SPACING=1000/60, STRIP_W=12, BAND_H=10;
 const P={arms:8,tiers:1,colH:600,bulges:3,finial:1,chain:250,
@@ -435,12 +435,14 @@ function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR)
     im.instanceMatrix.needsUpdate=true;mark(im,true);g.add(im);LED.count+=n;LED.len+=L;}
   if(P.drops&&P.dropCount>0){for(let k=0;k<P.dropCount;k++){
     const t=0.42+(P.dropCount>1?k/(P.dropCount-1):0.5)*0.34;const p=curve.getPoint(t);const ds=P.dropSize;
-    const topY=p.y-P.tubeR-2; // sous la surface du tube : plus d'incrustation dans le bras
-    const hook=new THREE.Mesh(new THREE.TorusGeometry(3.2*ds,0.95,8,16,Math.PI*1.5),matArm); // crochet imprime sur le bras
-    hook.position.set(p.x,topY,p.z);hook.rotation.x=Math.PI/2;hook.rotation.z=-Math.PI*0.25;g.add(hook);
-    const drop=new THREE.Group();drop.position.set(p.x,topY-5*ds,p.z); // pampille = piece separee suspendue
-    const loop=new THREE.Mesh(new THREE.TorusGeometry(2.6*ds,0.85,8,16),matDrop);loop.rotation.x=Math.PI/2;drop.add(loop);
-    const body=new THREE.Mesh(new THREE.OctahedronGeometry(P.cupR*0.30*ds,0),matDrop);body.scale.y=1.9;body.position.y=-(5+P.cupR*0.30*ds*1.9)*ds;drop.add(body);
+    const ax=p.x,az=p.z,ay=p.y-P.tubeR-1.5; // ancrage juste sous le tube
+    const hook=new THREE.Mesh(new THREE.TorusGeometry(2.6,0.7,8,14,Math.PI*1.45),matArm);hook.position.set(ax,ay,az);hook.rotation.z=Math.PI;g.add(hook); // petit crochet imprime
+    let ly=ay-3;const nL=4; // petite chaine (maillons alternes)
+    for(let i=0;i<nL;i++){const lk=new THREE.Mesh(new THREE.TorusGeometry(1.7,0.55,6,10),matArm);lk.position.set(ax,ly,az);lk.rotation.x=Math.PI/2;lk.rotation.z=(i%2)?Math.PI/2:0;g.add(lk);ly-=2.6;}
+    const bodyR=Math.min(P.cupR*0.26*ds,P.tubeR*0.85); // borne : jamais plus large que le bras -> ne bouffe pas la forme
+    const drop=new THREE.Group();drop.position.set(ax,ly-1,az); // pampille suspendue bien sous le bras
+    const loop=new THREE.Mesh(new THREE.TorusGeometry(1.8,0.55,8,12),matDrop);loop.rotation.x=Math.PI/2;drop.add(loop);
+    const body=new THREE.Mesh(new THREE.OctahedronGeometry(bodyR,0),matDrop);body.scale.y=1.9;body.position.y=-(3+bodyR*1.9);drop.add(body);
     mark(drop,true);g.add(drop);}}
   if(cfg.crystals){const cl=crystalCluster(P.cupR*0.55*P.crystalSize,3,false);cl.position.set(tip.x,tip.y+2,tip.z);g.add(cl);}
   if(cfg.bulbs){const c=P.candle;
@@ -573,22 +575,26 @@ let presetsCache={};
 const $=id=>document.getElementById(id);
 function updateBulbHint(){const el=$('bulb-hint');if(!el)return;el.textContent=P.bulbMode==='e14'?'→ Trou fileté femelle (coupelle) + adaptateur double filetage Ø16/Ø14, soulevé pour voir le vissage. Visible même si les ampoules sont éteintes.':'→ Fausse bougie + flamme (déco, à imprimer).';}
 function updateXSection(){const el=$('xsection');if(!el)return;
-  const r=P.tubeR,W=260,H=238,cx=130,cy=98,scale=Math.min(78/Math.max(r,5),9),N=130;let pts='';
+  const r=P.tubeR,W=260,H=250,cx=130,cy=94,scale=Math.min(76/Math.max(r,5),9),N=130;let pts='';
   for(let i=0;i<=N;i++){const a=i/N*Math.PI*2,rr=P.flutes?r*(1+0.5*P.fluteDepth*Math.cos(a*P.fluteCount)):r,x=cx+Math.cos(a)*rr*scale,y=cy+Math.sin(a)*rr*scale;pts+=x.toFixed(1)+','+y.toFixed(1)+' ';}
-  const tubeB=cy+r*scale,chW=12,chD=Math.min(r*0.85,6),cw=chW*scale,cd=chD*scale,cx0=cx-cw/2,cy0=tubeB-cd,sH=2.2*scale,dia=(2*r).toFixed(0),dep=(P.fluteDepth*r).toFixed(1),narrow=(2*r)<(chW+4);
+  const margin=1.5,strip=12,chW=strip+2*margin,chH=5,wall=Math.max(2.5,r*0.14);
+  const innerBot=cy+r*scale,cw=chW*scale,chh=chH*scale,wp=wall*scale,cx0=cx-cw/2,cyBot=innerBot-wp,cyTop=cyBot-chh;
+  const sp=strip*scale,sH=2.4*scale,sx=cx-sp/2,sy=cyBot-sH-1;
+  const dia=(2*r).toFixed(0),dep=(P.fluteDepth*r).toFixed(1),narrow=(2*r)<(chW+2*wall);
   el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
     <text x="${cx}" y="14" fill="#cd9b4a" font-size="11.5" text-anchor="middle" font-family="Cinzel,serif" letter-spacing="2">COUPE DU BRAS</text>
-    <polygon points="${pts}" fill="rgba(120,160,200,0.15)" stroke="#9bc0e0" stroke-width="1.4"/>
+    <polygon points="${pts}" fill="rgba(120,160,200,0.13)" stroke="#9bc0e0" stroke-width="1.4"/>
     <line x1="${cx-r*scale}" y1="${cy}" x2="${cx+r*scale}" y2="${cy}" stroke="#e6c27a" stroke-width="0.8" stroke-dasharray="4 2"/>
     <text x="${cx}" y="${cy-5}" fill="#e6c27a" font-size="10.5" text-anchor="middle">Ø ${dia} mm</text>
-    <rect x="${cx0}" y="${cy0}" width="${cw}" height="${cd+2}" fill="#0c0a07" stroke="#ffce7a" stroke-width="1.3"/>
-    <rect x="${cx0+1.5}" y="${tubeB-sH-1}" width="${cw-3}" height="${sH}" rx="1" fill="rgba(255,220,150,0.72)" stroke="#ffdca0" stroke-width="0.6"/>
-    <line x1="${cx0}" y1="${tubeB+13}" x2="${cx0+cw}" y2="${tubeB+13}" stroke="#ffce7a" stroke-width="0.8"/>
-    <line x1="${cx0}" y1="${tubeB+9}" x2="${cx0}" y2="${tubeB+17}" stroke="#ffce7a" stroke-width="0.8"/>
-    <line x1="${cx0+cw}" y1="${tubeB+9}" x2="${cx0+cw}" y2="${tubeB+17}" stroke="#ffce7a" stroke-width="0.8"/>
-    <text x="${cx}" y="${tubeB+28}" fill="#ffce7a" font-size="10.5" text-anchor="middle">canal ruban : ${chW} mm</text>
-    <text x="${cx}" y="${tubeB+43}" fill="#bdbdbd" font-size="9.5" text-anchor="middle">profondeur canal : ${chD.toFixed(1)} mm</text>
-    ${narrow?`<text x="${cx}" y="${H-9}" fill="#ff8a8a" font-size="9.5" text-anchor="middle">⚠ Ø bras trop petit pour 12 mm</text>`:(P.flutes?`<text x="${cx}" y="${H-9}" fill="#9bc0e0" font-size="9.5" text-anchor="middle">stries : ${P.fluteCount} × ${dep} mm</text>`:`<text x="${cx}" y="${H-9}" fill="#6a6a6a" font-size="9.5" text-anchor="middle">stries off</text>`)}
+    <rect x="${cx0}" y="${cyTop}" width="${cw}" height="${chh}" rx="1.5" fill="#0c0a07" stroke="#ffce7a" stroke-width="1.3"/>
+    <rect x="${sx}" y="${sy}" width="${sp}" height="${sH}" rx="1" fill="rgba(255,220,150,0.72)" stroke="#ffdca0" stroke-width="0.6"/>
+    <line x1="${cx0}" y1="${innerBot+9}" x2="${cx0+cw}" y2="${innerBot+9}" stroke="#ffce7a" stroke-width="0.8"/>
+    <line x1="${cx0}" y1="${innerBot+5}" x2="${cx0}" y2="${innerBot+13}" stroke="#ffce7a" stroke-width="0.8"/>
+    <line x1="${cx0+cw}" y1="${innerBot+5}" x2="${cx0+cw}" y2="${innerBot+13}" stroke="#ffce7a" stroke-width="0.8"/>
+    <text x="${cx}" y="${innerBot+24}" fill="#ffce7a" font-size="10.5" text-anchor="middle">canal interne ${chW} mm</text>
+    <text x="${cx}" y="${innerBot+39}" fill="#ffdca0" font-size="9.5" text-anchor="middle">ruban 12 mm + marge ${margin} mm/côté</text>
+    <text x="${cx}" y="${innerBot+53}" fill="#9bc0e0" font-size="9.5" text-anchor="middle">paroi ≈ ${wall.toFixed(1)} mm · stries conservées autour</text>
+    ${narrow?`<text x="${cx}" y="${H-8}" fill="#ff8a8a" font-size="9.5" text-anchor="middle">⚠ Ø bras trop petit (canal + parois)</text>`:(P.flutes?`<text x="${cx}" y="${H-8}" fill="#9bc0e0" font-size="9" text-anchor="middle">stries : ${P.fluteCount} × ${dep} mm</text>`:`<text x="${cx}" y="${H-8}" fill="#6a6a6a" font-size="9" text-anchor="middle">stries off</text>`)}
   </svg>`;}
 function refreshEnabled(){
   const grey=(id,c)=>{const el=$(id),r=el&&el.closest('.row');if(r)r.classList.toggle('off',c);};
