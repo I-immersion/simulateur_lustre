@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- LUMIIA — Générateur de Lustre Gothique — v1.9 -->
+<!-- LUMIIA — Générateur de Lustre Gothique — v2.0 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -43,6 +43,7 @@
   .chip.on{background:linear-gradient(180deg,#3a2c14,#241a0d);color:var(--gold);border-color:var(--brass);box-shadow:0 0 12px rgba(205,155,74,.25) inset}
   .hint-txt{font-size:11px;color:var(--dim);line-height:1.45;margin:-2px 0 8px}
   .off{opacity:.38;pointer-events:none}
+  .collapsed{display:none!important}
   #finish-sw{display:flex;flex-wrap:wrap;gap:6px}
   #finish-sw .sw{flex:0 0 auto;width:30px;height:24px;border-radius:5px;cursor:pointer;border:2px solid transparent}
   #finish-sw .sw.on{border-color:var(--ink);box-shadow:0 0 0 2px var(--brass)}
@@ -68,7 +69,7 @@
 <body>
 <div id="app">
   <aside id="panel">
-    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v1.9</span></div>
+    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.0</span></div>
     <div class="tag">Générateur paramétrique gothique — 1 à 2 m</div>
 
     <div class="grp" id="preset-grp">
@@ -112,7 +113,7 @@
       <div class="row"><label>Profondeur stries <span class="v" id="lab-fluteDepth">0.30</span></label><input type="range" id="fluteDepth" min="0.05" max="0.8" step="0.05" value="0.3"></div>
       <div class="row"><label>Ø coupelle <span class="v" id="lab-cupR">32 mm</span></label><input type="range" id="cupR" min="12" max="70" step="1" value="32"></div>
       <div class="row"><label>Taille bougie <span class="v" id="lab-candle">1.0</span></label><input type="range" id="candle" min="0.4" max="2.2" step="0.05" value="1"></div>
-      <div class="toggles"><div class="chip on" id="bm-candle">Bougie</div><div class="chip" id="bm-e14">Douille E14</div></div>
+      <div class="toggles" id="bm-row"><div class="chip on" id="bm-candle">Bougie</div><div class="chip" id="bm-e14">Douille E14</div></div>
       <div class="row"><label>Décalage étages <span class="v" id="lab-taper">0.78</span></label><input type="range" id="taper" min="0.5" max="1" step="0.02" value="0.78"></div>
     </div>
 
@@ -136,6 +137,8 @@
       <label style="font-size:11.5px;color:var(--dim)">Matière de l'aile</label>
       <div class="toggles" style="margin-top:4px"><div class="chip on" id="m-petg">PETG translucide</div><div class="chip" id="m-tissu">Tissu</div></div>
       <div class="hint-txt"><b style="color:var(--ink)">PETG</b> : imprimée, translucide, diffuse la LED. <b style="color:var(--ink)">Tissu</b> : tendue sur une bande d'accroche, mate. (Cliquer une matière active les ailes.)</div>
+      <div class="toggles" id="fabric-row" style="margin-top:4px"><div class="chip on" id="t-fabric">Tissu (drapé) visible</div></div>
+      <div class="hint-txt" id="fabric-hint">Désactive pour voir la <b style="color:var(--ink)">collerette d'accroche</b> seule (le tissu se colle dessus).</div>
       <div class="row"><label>Creux aile (profondeur) <span class="v" id="lab-wingSag">60 mm</span></label><input type="range" id="wingSag" min="0" max="220" step="5" value="60"></div>
       <div class="row"><label>Galbe 3D <span class="v" id="lab-wingSpan">1.0</span></label><input type="range" id="wingSpan" min="0.4" max="2" step="0.05" value="1"></div>
       <div class="row"><label>Festons <span class="v" id="lab-wingScallop">4</span></label><input type="range" id="wingScallop" min="0" max="9" step="1" value="4"></div>
@@ -213,14 +216,14 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref as dbRef, onValue, set as dbSet, remove as dbRemove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-const VERSION='v1.9';
+const VERSION='v2.0';
 const BED={single:[325,320,325],dual:[300,320,325]};
 const LED_SPACING=1000/60, STRIP_W=12, BAND_H=10;
 const P={arms:8,tiers:1,colH:600,bulges:3,finial:1,chain:250,
   armGlass:true,spread:420,droop:180,rise:240,tubeR:12,cupR:32,candle:1,taper:0.78,
   volute:0,knuckles:0,underScrolls:1,sinuo:0,
   tierGap:120,bodyBottom:0,flutes:false,fluteCount:12,fluteDepth:0.3,
-  finish:'bronze',bulbMode:'candle',
+  finish:'bronze',bulbMode:'candle',showFabric:true,
   wings:false,wingMode:'petg',wingSag:60,wingSpan:1,wingScallop:4,wingRibs:2,wingColor:0x6a2fb0,
   bulbs:true,drops:true,strip:true,crystals:true,beads:false,grain:false,
   dropCount:2,dropSize:1,ornSize:1,crystalSize:1,
@@ -342,6 +345,10 @@ function flutedTube(curve,radius,count,depth,seg){
       pos.push(p.x+N.x*x+B.x*y,p.y+N.y*x+B.y*y,p.z+N.z*x+B.z*y);}}
   const R=rad+1;for(let i=0;i<seg;i++)for(let j=0;j<rad;j++){const a=i*R+j,b=(i+1)*R+j,c=(i+1)*R+j+1,e=i*R+j+1;idx.push(a,b,e,b,c,e);}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();return g;}
+function helixThread(r,h,pitch,wire){
+  const turns=Math.max(1,h/pitch),N=Math.max(24,Math.floor(turns*22)),pts=[];
+  for(let i=0;i<=N;i++){const t=i/N,a=t*turns*Math.PI*2,y=t*h;pts.push(new THREE.Vector3(Math.cos(a)*r,y,Math.sin(a)*r));}
+  return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),N,wire,8,false);}
 function armCurve(hubR){const s=P.spread,d=P.droop,r=P.rise,w=P.sinuo;
   return new THREE.CatmullRomCurve3([new THREE.Vector3(hubR,0,0),new THREE.Vector3(hubR+s*0.34,-d*0.55+w*d*0.35,0),
     new THREE.Vector3(hubR+s*0.74,-d,0),new THREE.Vector3(hubR+s*0.95,-d*0.16-w*r*0.3,0),
@@ -381,7 +388,7 @@ function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR)
   const nt=new THREE.Mesh(new THREE.SphereGeometry(P.tubeR*1.25*O,16,12),matArm);nt.position.copy(tip);g.add(nt);
   const cup=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(P.tubeR*0.9,0),new THREE.Vector2(P.cupR*0.5,3),
     new THREE.Vector2(P.cupR,15),new THREE.Vector2(P.cupR*0.92,19),new THREE.Vector2(P.tubeR*1.1,8),new THREE.Vector2(0,8)],30),matCup);cup.position.copy(tip);g.add(cup);
-  if(cfg.wings){g.add(wingMesh(curve));
+  if(cfg.wings){if(P.wingMode!=='tissu'||P.showFabric)g.add(wingMesh(curve));
     if(P.wingMode==='tissu')g.add(attachBand(curve)); // bande d'accroche 10mm (colle tissu + consolide)
     for(let k=1;k<=P.wingRibs;k++){const t=k/(P.wingRibs+1);const p=curve.getPoint(t);
       g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.LineCurve3(p,wingLowPoint(p,t)),2,P.tubeR*0.38,8,false),matArm));}}
@@ -396,12 +403,25 @@ function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR)
   if(cfg.crystals){const cl=crystalCluster(P.cupR*0.55*P.crystalSize,3,false);cl.position.set(tip.x,tip.y+2,tip.z);g.add(cl);}
   if(cfg.bulbs){const c=P.candle;
     if(P.bulbMode==='e14'){
-      const holderR=Math.max(P.cupR*0.5,11),holderH=26,boreR=7; // alesage Ø14 pour douille E14
-      const holder=new THREE.Mesh(new THREE.CylinderGeometry(holderR,holderR*1.1,holderH,24),matCup);holder.position.set(tip.x,tip.y+8+holderH/2,tip.z);g.add(holder);
-      const bore=new THREE.Mesh(new THREE.CylinderGeometry(boreR,boreR,holderH*0.72,20),matBore);bore.position.set(tip.x,tip.y+8+holderH-holderH*0.30,tip.z);g.add(bore);
-      const bulb=new THREE.Mesh(new THREE.SphereGeometry(6.5*c,18,14),matCream);bulb.scale.y=1.35;bulb.position.set(tip.x,tip.y+8+holderH+9*c,tip.z);mark(bulb,true);g.add(bulb);
-      const fl=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(2.4*c,2*c),new THREE.Vector2(1.6*c,5*c),new THREE.Vector2(0,7*c)],12),matFlame);fl.position.set(tip.x,tip.y+8+holderH+18*c,tip.z);mark(fl,true);g.add(fl);
-      const pl=new THREE.PointLight(0xffd08a,9,700,2);pl.position.set(tip.x,tip.y+8+holderH+14*c,tip.z);g.add(pl);
+      // Adaptateur visse-coupelle a DOUBLE FILETAGE : bas O16 (se visse dans la coupelle), haut O14 (pour douille E14)
+      const baseY=tip.y+8,scR=8,hBot=14,hexR=11,topR=7,hTop=12,topY=hBot+5;
+      const bore=new THREE.Mesh(new THREE.CylinderGeometry(scR,scR,12,20),matBore);bore.position.set(tip.x,baseY-5,tip.z);g.add(bore); // logement femelle dans la coupelle
+      const adp=new THREE.Group();adp.position.set(tip.x,baseY,tip.z);
+      const hx=new THREE.Mesh(new THREE.CylinderGeometry(hexR,hexR,5,6),matCup);hx.position.y=hBot+2.5;adp.add(hx);
+      if(draft){
+        const cb=new THREE.Mesh(new THREE.CylinderGeometry(scR,scR,hBot,16),matCup);cb.position.y=hBot/2;adp.add(cb);
+        const ct=new THREE.Mesh(new THREE.CylinderGeometry(topR,topR,hTop,16),matCup);ct.position.y=topY+hTop/2;adp.add(ct);
+      } else {
+        const cb=new THREE.Mesh(new THREE.CylinderGeometry(scR-1,scR-1,hBot,18),matCup);cb.position.y=hBot/2;adp.add(cb);
+        adp.add(new THREE.Mesh(helixThread(scR,hBot,3,1.0),matCup));
+        const ct=new THREE.Mesh(new THREE.CylinderGeometry(topR-1,topR-1,hTop,18),matCup);ct.position.y=topY+hTop/2;adp.add(ct);
+        const tt=new THREE.Mesh(helixThread(topR,hTop,2,0.9),matCup);tt.position.y=topY;adp.add(tt);
+      }
+      g.add(adp);
+      const tipH=baseY+topY+hTop;
+      const bulb=new THREE.Mesh(new THREE.SphereGeometry(6.5*c,18,14),matCream);bulb.scale.y=1.35;bulb.position.set(tip.x,tipH+9*c,tip.z);mark(bulb,true);g.add(bulb);
+      const fl=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(2.4*c,2*c),new THREE.Vector2(1.6*c,5*c),new THREE.Vector2(0,7*c)],12),matFlame);fl.position.set(tip.x,tipH+18*c,tip.z);mark(fl,true);g.add(fl);
+      const pl=new THREE.PointLight(0xffd08a,9,700,2);pl.position.set(tip.x,tipH+14*c,tip.z);g.add(pl);
     } else {
       const cr=4.6*c,ch=46*c;
       const candle=new THREE.Mesh(new THREE.CylinderGeometry(cr*0.82,cr,ch,14),matCream);candle.position.set(tip.x,tip.y+8+ch/2,tip.z);mark(candle,true);g.add(candle);
@@ -498,7 +518,7 @@ chip('t-wings',e=>{P.wings=!P.wings;e.target.classList.toggle('on',P.wings);refr
 function pickMode(mode){P.wingMode=mode;document.getElementById('m-petg').classList.toggle('on',mode==='petg');document.getElementById('m-tissu').classList.toggle('on',mode==='tissu');
   if(!P.wings){P.wings=true;document.getElementById('t-wings').classList.add('on');}matWing=makeWingMat();refreshEnabled();sched();}
 chip('m-petg',()=>pickMode('petg'));chip('m-tissu',()=>pickMode('tissu'));
-chip('t-bulbs',e=>{P.bulbs=!P.bulbs;e.target.classList.toggle('on',P.bulbs);sched();});
+chip('t-bulbs',e=>{P.bulbs=!P.bulbs;e.target.classList.toggle('on',P.bulbs);refreshEnabled();sched();});
 chip('t-drops',e=>{P.drops=!P.drops;e.target.classList.toggle('on',P.drops);sched();});
 chip('t-strip',e=>{P.strip=!P.strip;e.target.classList.toggle('on',P.strip);sched();});
 chip('t-crystals',e=>{P.crystals=!P.crystals;e.target.classList.toggle('on',P.crystals);sched();});
@@ -525,11 +545,18 @@ const fbAuth=getAuth(fbApp), fbDb=getDatabase(fbApp), PRESETS='lustre/presets';
 let presetsCache={};
 const $=id=>document.getElementById(id);
 function refreshEnabled(){
-  ['fluteCount','fluteDepth'].forEach(id=>{const r=$(id)&&$(id).closest('.row');if(r)r.classList.toggle('off',!P.flutes);});
-  ['wingSag','wingSpan','wingScallop','wingRibs'].forEach(id=>{const r=$(id)&&$(id).closest('.row');if(r)r.classList.toggle('off',!P.wings);});
+  const hide=(id,c)=>{const el=$(id),r=el&&el.closest('.row');if(r)r.classList.toggle('collapsed',c);};
+  ['fluteCount','fluteDepth'].forEach(id=>hide(id,!P.flutes));
+  ['wingSag','wingSpan','wingScallop','wingRibs'].forEach(id=>hide(id,!P.wings));
+  hide('candle',!P.bulbs);
+  const bm=$('bm-row');if(bm)bm.classList.toggle('collapsed',!P.bulbs);
+  const tissu=P.wings&&P.wingMode==='tissu';
+  const fr=$('fabric-row');if(fr)fr.classList.toggle('collapsed',!tissu);
+  const fh=$('fabric-hint');if(fh)fh.classList.toggle('collapsed',!tissu);
 }
 function pickBulb(m){P.bulbMode=m;$('bm-candle').classList.toggle('on',m==='candle');$('bm-e14').classList.toggle('on',m==='e14');sched();}
 chip('bm-candle',()=>pickBulb('candle'));chip('bm-e14',()=>pickBulb('e14'));
+chip('t-fabric',e=>{P.showFabric=!P.showFabric;e.target.classList.toggle('on',P.showFabric);sched();});
 function buildFinishSwatches(){const c=$('finish-sw');if(!c)return;
   c.innerHTML=Object.entries(FINISHES).map(([k,fI])=>`<div class="sw${k===P.finish?' on':''}" data-f="${k}" title="${fI.label}" style="background:${fI.sw}"></div>`).join('');
   c.querySelectorAll('.sw').forEach(sw=>sw.addEventListener('click',()=>{c.querySelectorAll('.sw').forEach(x=>x.classList.remove('on'));sw.classList.add('on');P.finish=sw.dataset.f;applyFinish();}));}
@@ -545,6 +572,7 @@ function syncUI(){
   $('m-petg').classList.toggle('on',P.wingMode==='petg');$('m-tissu').classList.toggle('on',P.wingMode==='tissu');
   $('b-single').classList.toggle('on',P.bed==='single');$('b-dual').classList.toggle('on',P.bed==='dual');
   $('bm-candle').classList.toggle('on',P.bulbMode!=='e14');$('bm-e14').classList.toggle('on',P.bulbMode==='e14');
+  $('t-fabric').classList.toggle('on',P.showFabric!==false);
   buildFinishSwatches();applyFinish();refreshEnabled();
   matWing=makeWingMat();applyGrain();renderTierCfg();rebuild();
 }
