@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- LUMIIA — Générateur de Lustre Gothique — v2.1 -->
+<!-- LUMIIA — Générateur de Lustre Gothique — v2.2 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -73,7 +73,7 @@
 <body>
 <div id="app">
   <aside id="panel">
-    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.1</span></div>
+    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.2</span></div>
     <div class="tag">Générateur paramétrique gothique — 1 à 2 m</div>
 
     <div class="grp" id="preset-grp">
@@ -223,7 +223,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref as dbRef, onValue, set as dbSet, remove as dbRemove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-const VERSION='v2.1';
+const VERSION='v2.2';
 const BED={single:[325,320,325],dual:[300,320,325]};
 const LED_SPACING=1000/60, STRIP_W=12, BAND_H=10;
 const P={arms:8,tiers:1,colH:600,bulges:3,finial:1,chain:250,
@@ -422,25 +422,29 @@ function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR)
   if(cfg.crystals){const cl=crystalCluster(P.cupR*0.55*P.crystalSize,3,false);cl.position.set(tip.x,tip.y+2,tip.z);g.add(cl);}
   if(cfg.bulbs){const c=P.candle;
     if(P.bulbMode==='e14'){
-      // Adaptateur visse-coupelle a DOUBLE FILETAGE : bas O16 (se visse dans la coupelle), haut O14 (pour douille E14)
-      const baseY=tip.y+8,scR=8,hBot=14,hexR=11,topR=7,hTop=12,topY=hBot+5;
-      // Coupelle : logement femelle filete VISIBLE (la ou se visse l'adaptateur)
-      const boss=new THREE.Mesh(new THREE.CylinderGeometry(scR+3.5,scR+4.5,14,24),matCup);boss.position.set(tip.x,baseY+5,tip.z);g.add(boss);
-      const hole=new THREE.Mesh(new THREE.CylinderGeometry(scR,scR,15,20),matBore);hole.position.set(tip.x,baseY+6,tip.z);g.add(hole);
-      if(!draft){const fem=new THREE.Mesh(helixThread(scR,13,3,0.8),matBore);fem.position.set(tip.x,baseY,tip.z);g.add(fem);}
-      const adp=new THREE.Group();adp.position.set(tip.x,baseY,tip.z);
+      // === Systeme E14 a DOUBLE FILETAGE (legerement eclate pour voir le vissage) ===
+      const baseY=tip.y+8,scR=8,hBot=14,hexR=11,topR=7,hTop=12,topY=hBot+5,ringR=scR+4,ringH=16;
+      // -- Coupelle : douille FEMELLE filetee, TROU reellement creux et visible --
+      const ring=new THREE.Mesh(new THREE.CylinderGeometry(ringR,ringR,ringH,28,1,true),matCup);ring.position.set(tip.x,baseY-1+ringH/2,tip.z);g.add(ring); // paroi ouverte en haut
+      const fbot=new THREE.Mesh(new THREE.CircleGeometry(ringR,28),matCup);fbot.rotation.x=-Math.PI/2;fbot.position.set(tip.x,baseY-1,tip.z);g.add(fbot); // fond exterieur
+      const recess=new THREE.Mesh(new THREE.CylinderGeometry(scR,scR,ringH-1,22,1,true),matBore);recess.position.set(tip.x,baseY-0.5+ringH/2,tip.z);g.add(recess); // creux sombre = le trou
+      const rbot=new THREE.Mesh(new THREE.CircleGeometry(scR,22),matBore);rbot.rotation.x=-Math.PI/2;rbot.position.set(tip.x,baseY-0.5,tip.z);g.add(rbot);
+      if(!draft){const fem=new THREE.Mesh(helixThread(scR,ringH-2,3,0.9),matBore);fem.position.set(tip.x,baseY-0.5,tip.z);g.add(fem);} // filet femelle visible dans le trou
+      // -- Adaptateur double filetage, souleve de GAP mm au-dessus du trou --
+      const GAP=14,adpY=baseY-1+ringH+GAP;
+      const adp=new THREE.Group();adp.position.set(tip.x,adpY,tip.z);
       const hx=new THREE.Mesh(new THREE.CylinderGeometry(hexR,hexR,5,6),matCup);hx.position.y=hBot+2.5;adp.add(hx);
       if(draft){
         const cb=new THREE.Mesh(new THREE.CylinderGeometry(scR,scR,hBot,16),matCup);cb.position.y=hBot/2;adp.add(cb);
         const ct=new THREE.Mesh(new THREE.CylinderGeometry(topR,topR,hTop,16),matCup);ct.position.y=topY+hTop/2;adp.add(ct);
       } else {
         const cb=new THREE.Mesh(new THREE.CylinderGeometry(scR-1,scR-1,hBot,18),matCup);cb.position.y=hBot/2;adp.add(cb);
-        adp.add(new THREE.Mesh(helixThread(scR,hBot,3,1.0),matCup));
+        adp.add(new THREE.Mesh(helixThread(scR,hBot,3,1.0),matCup)); // filet male bas O16
         const ct=new THREE.Mesh(new THREE.CylinderGeometry(topR-1,topR-1,hTop,18),matCup);ct.position.y=topY+hTop/2;adp.add(ct);
-        const tt=new THREE.Mesh(helixThread(topR,hTop,2,0.9),matCup);tt.position.y=topY;adp.add(tt);
+        const tt=new THREE.Mesh(helixThread(topR,hTop,2,0.9),matCup);tt.position.y=topY;adp.add(tt); // filet male haut O14
       }
       g.add(adp);
-      const tipH=baseY+topY+hTop;
+      const tipH=adpY+topY+hTop;
       const bulb=new THREE.Mesh(new THREE.SphereGeometry(6.5*c,18,14),matCream);bulb.scale.y=1.35;bulb.position.set(tip.x,tipH+9*c,tip.z);mark(bulb,true);g.add(bulb);
       const fl=new THREE.Mesh(new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(2.4*c,2*c),new THREE.Vector2(1.6*c,5*c),new THREE.Vector2(0,7*c)],12),matFlame);fl.position.set(tip.x,tipH+18*c,tip.z);mark(fl,true);g.add(fl);
       const pl=new THREE.PointLight(0xffd08a,9,700,2);pl.position.set(tip.x,tipH+14*c,tip.z);g.add(pl);
@@ -566,7 +570,7 @@ const fbApp=initializeApp({apiKey:"AIzaSyBPgjVFKrP80qX_hlfUFqL168XONfNIBA4",auth
 const fbAuth=getAuth(fbApp), fbDb=getDatabase(fbApp), PRESETS='lustre/presets';
 let presetsCache={};
 const $=id=>document.getElementById(id);
-function updateBulbHint(){const el=$('bulb-hint');if(!el)return;el.textContent=P.bulbMode==='e14'?'→ Adaptateur double filetage imprimé (Ø16 vissé dans la coupelle · Ø14 pour la douille) + ampoule.':'→ Fausse bougie + flamme (déco, à imprimer).';}
+function updateBulbHint(){const el=$('bulb-hint');if(!el)return;el.textContent=P.bulbMode==='e14'?'→ Trou fileté femelle dans la coupelle + adaptateur double filetage (Ø16 bas · Ø14 haut), montré soulevé pour voir le vissage.':'→ Fausse bougie + flamme (déco, à imprimer).';}
 function updateXSection(){const el=$('xsection');if(!el)return;
   const r=P.tubeR,W=200,H=168,cx=100,cy=76,scale=Math.min(56/Math.max(r,5),7),N=120;let pts='';
   for(let i=0;i<=N;i++){const a=i/N*Math.PI*2,rr=P.flutes?r*(1+0.5*P.fluteDepth*Math.cos(a*P.fluteCount)):r,x=cx+Math.cos(a)*rr*scale,y=cy+Math.sin(a)*rr*scale;pts+=x.toFixed(1)+','+y.toFixed(1)+' ';}
