@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- LUMIIA — Générateur de Lustre Gothique — v2.4 -->
+<!-- LUMIIA — Générateur de Lustre Gothique — v2.5 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -73,7 +73,7 @@
 <body>
 <div id="app">
   <aside id="panel">
-    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.4</span></div>
+    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.5</span></div>
     <div class="tag">Générateur paramétrique gothique — 1 à 2 m</div>
 
     <div class="grp" id="preset-grp">
@@ -108,7 +108,7 @@
 
     <div class="grp">
       <div class="gh">Bras &amp; coupelles</div>
-      <div class="toggles"><div class="chip on" id="t-armglass">Bras PETG</div><div class="chip" id="t-flutes">Bras striés</div></div>
+      <div class="toggles"><div class="chip on" id="t-armglass">Bras PETG</div><div class="chip" id="t-flutes">Bras striés</div><div class="chip on" id="t-ledchan">Canal LED</div></div>
       <div class="row"><label>Envergure (≈ rayon) <span class="v" id="lab-spread">420 mm</span></label><input type="range" id="spread" min="120" max="950" step="10" value="420"></div>
       <div class="row"><label>Descente <span class="v" id="lab-droop">180 mm</span></label><input type="range" id="droop" min="0" max="400" step="10" value="180"></div>
       <div class="row"><label>Remontée <span class="v" id="lab-rise">240 mm</span></label><input type="range" id="rise" min="40" max="400" step="10" value="240"></div>
@@ -177,6 +177,14 @@
     </div>
 
     <div class="grp">
+      <div class="gh">Calques (afficher / cacher)</div>
+      <p class="hint-txt">Masque des couches pour vérifier que chaque pièce est complète et bien séparée.</p>
+      <div class="toggles"><div class="chip on" id="ly-corps">Corps</div><div class="chip on" id="ly-rosace">Rosace</div><div class="chip on" id="ly-chaine">Chaîne</div></div>
+      <div class="toggles"><div class="chip on" id="ly-bras">Bras</div><div class="chip on" id="ly-ailes">Ailes</div><div class="chip on" id="ly-ornements">Ornements</div></div>
+      <div class="toggles"><div class="chip on" id="ly-cristaux">Cristaux</div><div class="chip on" id="ly-leds">LEDs</div><div class="chip on" id="ly-lumieres">Lumières</div></div>
+    </div>
+
+    <div class="grp">
       <div class="gh">Finition (corps & accessoires)</div>
       <div class="toggles"><div class="chip on" id="mf-metal">Métal brillant</div><div class="chip" id="mf-filament">Filament mat</div></div>
       <p class="hint-txt">Rendu + couleur du corps & accessoires (les bras PETG restent transparents). « Filament mat » simule un PLA/PETG opaque, ex. orange mat.</p>
@@ -223,14 +231,14 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref as dbRef, onValue, set as dbSet, remove as dbRemove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-const VERSION='v2.4';
+const VERSION='v2.5';
 const BED={single:[325,320,325],dual:[300,320,325]};
 const LED_SPACING=1000/60, STRIP_W=12, BAND_H=10;
 const P={arms:8,tiers:1,colH:600,bulges:3,finial:1,chain:250,
   armGlass:true,spread:420,droop:180,rise:240,tubeR:12,cupR:32,candle:1,taper:0.78,
   volute:0,knuckles:0,underScrolls:1,sinuo:0,
   tierGap:120,bodyBottom:0,flutes:false,fluteCount:12,fluteDepth:0.3,
-  finish:'bronze',bulbMode:'candle',showFabric:true,showCeiling:false,matFinish:'metal',
+  finish:'bronze',bulbMode:'candle',showFabric:true,showCeiling:false,matFinish:'metal',ledChannel:true,
   wings:false,wingMode:'petg',wingSag:60,wingSpan:1,wingScallop:4,wingRibs:2,wingColor:0x6a2fb0,
   bulbs:true,drops:true,strip:true,crystals:true,beads:false,grain:false,
   dropCount:2,dropSize:1,ornSize:1,crystalSize:1,
@@ -307,6 +315,7 @@ function applyGrain(){[matColumn,matArm,matCup,matBand].forEach(m=>{m.roughnessM
 function tubeMat(){return P.armGlass?(draft?matArmGlassDraft:matArmGlass):matArm;}
 
 let H=P.colH;
+const LAYERS={corps:true,rosace:true,chaine:true,bras:true,ailes:true,ornements:true,cristaux:true,leds:true,lumieres:true};
 let root=new THREE.Group();scene.add(root);let printParts=[];
 const LED={count:0,len:0};
 
@@ -380,10 +389,23 @@ function wingMesh(curve){const steps=28,top=[],bot=[];
 function attachBand(curve){const steps=44,top=[],bot=[];
   for(let i=0;i<=steps;i++){const p=curve.getPoint(i/steps);top.push(p.clone());bot.push(new THREE.Vector3(p.x,p.y-BAND_H,p.z));}
   return ribbon(top,bot,matBand);}
+function armTube(curve,seg){
+  if(!P.flutes&&!P.ledChannel)return new THREE.TubeGeometry(curve,seg,P.tubeR,16,false);
+  const fr=curve.computeFrenetFrames(seg,false),rad=Math.max(48,P.flutes?P.fluteCount*4:48),pos=[],idx=[];
+  const chHalf=Math.min(Math.asin(Math.min(0.95,7.5/Math.max(P.tubeR,8))),1.15),chD=Math.min(P.tubeR*0.5,6);
+  for(let i=0;i<=seg;i++){const p=curve.getPoint(i/seg),N=fr.normals[i],B=fr.binormals[i];
+    const a0=Math.atan2(-B.y,-N.y); // direction "bas monde" dans le repere de section
+    for(let j=0;j<=rad;j++){const a=j/rad*Math.PI*2;
+      let rr=P.tubeR*(P.flutes?(1+0.5*P.fluteDepth*Math.cos(a*P.fluteCount)):1);
+      if(P.ledChannel){const da=Math.atan2(Math.sin(a-a0),Math.cos(a-a0));if(Math.abs(da)<chHalf)rr-=chD*Math.cos(da/chHalf*Math.PI/2);}
+      const x=Math.cos(a)*rr,y=Math.sin(a)*rr;
+      pos.push(p.x+N.x*x+B.x*y,p.y+N.y*x+B.y*y,p.z+N.z*x+B.z*y);}}
+  const R2=rad+1;for(let i=0;i<seg;i++)for(let j=0;j<rad;j++){const a=i*R2+j,b=(i+1)*R2+j,c=(i+1)*R2+j+1,e=i*R2+j+1;idx.push(a,b,e,b,c,e);}
+  const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));G.setIndex(idx);G.computeVertexNormals();return G;}
 function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR);const base=curve.getPoint(0),tip=curve.getPoint(1);const O=P.ornSize;
   const peg=new THREE.Mesh(new THREE.CylinderGeometry(P.tubeR*1.05,P.tubeR*1.25,P.tubeR*2.6,14),matArm);peg.rotation.z=Math.PI/2;peg.position.set(hubR-P.tubeR,0,0);g.add(peg);
   const boss=new THREE.Mesh(new THREE.SphereGeometry(P.tubeR*1.8*O,18,14),matArm);boss.position.copy(base);g.add(boss);
-  const tubeGeo=P.flutes?flutedTube(curve,P.tubeR,P.fluteCount,P.fluteDepth,draft?40:70):new THREE.TubeGeometry(curve,draft?50:90,P.tubeR,16,false);
+  const tubeGeo=armTube(curve,draft?50:80);
   g.add(new THREE.Mesh(tubeGeo,tubeMat()));
   // contre-volutes baroques sous le bras
   for(let k=0;k<P.underScrolls;k++){const t=0.25+(P.underScrolls>1?k/(P.underScrolls-1):0)*0.48;const p=curve.getPoint(t);const sc=P.spread*0.13;
@@ -403,7 +425,7 @@ function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR)
     new THREE.Vector2(P.cupR,15),new THREE.Vector2(P.cupR*0.92,19),new THREE.Vector2(P.tubeR*1.1,8),new THREE.Vector2(0,8)],30),matCup);cup.position.copy(tip);g.add(cup);
   let e14Top=tip.y+8;
   if(P.bulbMode==='e14'){ // douille E14 : trou femelle filete + adaptateur, VISIBLES meme si les flammes sont eteintes
-    const baseY=tip.y+8,scR=9,hBot=15,hexR=12,topR=7,hTop=12,topY=hBot+5,ringR=scR+5,ringH=18;
+    const baseY=tip.y+P.tubeR*1.25*O+2,scR=9,hBot=15,hexR=12,topR=7,hTop=12,topY=hBot+5,ringR=scR+5,ringH=18; // AU-DESSUS du noeud sinon la sphere cache le trou
     const ring=new THREE.Mesh(new THREE.CylinderGeometry(ringR,ringR,ringH,28,1,true),matCup);ring.position.set(tip.x,baseY-1+ringH/2,tip.z);g.add(ring);
     const fbot=new THREE.Mesh(new THREE.CircleGeometry(ringR,28),matCup);fbot.rotation.x=-Math.PI/2;fbot.position.set(tip.x,baseY-1,tip.z);g.add(fbot);
     const recess=new THREE.Mesh(new THREE.CylinderGeometry(scR,scR,ringH-1,24,1,true),matBore);recess.position.set(tip.x,baseY-0.5+ringH/2,tip.z);g.add(recess);
@@ -431,7 +453,7 @@ function buildArm(hubR,cfg){const g=new THREE.Group();const curve=armCurve(hubR)
   if(cfg.strip){const L=curve.getLength();const n=Math.max(2,Math.round(L/LED_SPACING));
     const im=new THREE.InstancedMesh(new THREE.SphereGeometry(Math.max(P.tubeR*0.32,1.6),6,5),matLed,n);
     const pts=curve.getSpacedPoints(n-1);const m=new THREE.Matrix4();
-    pts.forEach((p,i)=>{m.makeTranslation(p.x,p.y-P.tubeR*0.5,p.z);im.setMatrixAt(i,m);});
+    pts.forEach((p,i)=>{m.makeTranslation(p.x,p.y-(P.ledChannel?P.tubeR-3:P.tubeR*0.5),p.z);im.setMatrixAt(i,m);});
     im.instanceMatrix.needsUpdate=true;mark(im,true);g.add(im);LED.count+=n;LED.len+=L;}
   if(P.drops&&P.dropCount>0){for(let k=0;k<P.dropCount;k++){
     const t=0.42+(P.dropCount>1?k/(P.dropCount-1):0.5)*0.34;const p=curve.getPoint(t);const ds=P.dropSize;
@@ -472,19 +494,19 @@ function rebuild(){
   const topA=H-0.45*P.colH;
   for(let ti=0;ti<P.tiers;ti++){const tierY=topA-ti*P.tierGap,outerR=shaftRadius(tierY)+16;
     corps.add(buildCollar(tierY,outerR));tierData.push({ti,tierY,outerR,off:(ti%2)?Math.PI/P.arms:0,k:Math.pow(P.taper,(P.tiers-1-ti))});}
-  root.add(corps);printParts.push({name:'corps_central',obj:corps});
-  const canopy=buildCanopy(yCan);root.add(canopy);printParts.push({name:'rosace_plafond',obj:canopy});
-  root.add(buildChain(yTop,yCan));
-  if(P.crystals&&!draft){const amas=crystalCluster(110*P.crystalSize,11,true);amas.rotation.x=Math.PI;amas.position.y=H*0.02;root.add(amas);}
+  corps.userData.layer='corps';root.add(corps);printParts.push({name:'corps_central',obj:corps});
+  const canopy=buildCanopy(yCan);canopy.userData.layer='rosace';root.add(canopy);printParts.push({name:'rosace_plafond',obj:canopy});
+  const chainG=buildChain(yTop,yCan);chainG.userData.layer='chaine';root.add(chainG);
+  if(P.crystals&&!draft){const amas=crystalCluster(110*P.crystalSize,11,true);amas.rotation.x=Math.PI;amas.position.y=H*0.02;amas.userData.layer='cristaux';root.add(amas);}
   let n=0;
   tierData.forEach(td=>{const s0=P.spread,d0=P.droop,r0=P.rise;P.spread=s0*td.k;P.droop=d0*td.k;P.rise=r0*td.k;
     const tc=tierCfg[td.ti];
     const cfg={wings:P.wings&&tc.wings&&!draft, strip:P.strip&&tc.strip, bulbs:P.bulbs&&tc.bulbs, crystals:P.crystals&&tc.crystals&&!draft};
     const hubR=td.outerR-4;
     for(let i=0;i<P.arms;i++){const a=buildArm(hubR,cfg);a.group.position.y=td.tierY;a.group.rotation.y=td.off+i*(Math.PI*2/P.arms);
-      root.add(a.group);printParts.push({name:`bras_e${td.ti+1}_${++n}`,obj:a.group});}
+      a.group.userData.layer='bras';root.add(a.group);printParts.push({name:`bras_e${td.ti+1}_${++n}`,obj:a.group});}
     P.spread=s0;P.droop=d0;P.rise=r0;});
-  applyGrain();applyView();updateReadout();updateXSection();R();}
+  applyGrain();applyView();applyLayers();updateReadout();updateXSection();R();}
 
 function applyView(){
   if(P.pieces){printParts.forEach((p,idx)=>{const c=PALETTE[idx%PALETTE.length];
@@ -492,6 +514,12 @@ function applyView(){
       o.userData._m=o.userData._m||o.material;o.material=new THREE.MeshStandardMaterial({color:c,metalness:0.4,roughness:0.6});}});});}
   else{printParts.forEach(p=>p.obj.traverse(o=>{if(o.isMesh&&o.userData._m)o.material=o.userData._m;}));}R();}
 
+function applyLayers(){
+  root.children.forEach(o=>{const t=o.userData.layer;if(t)o.visible=LAYERS[t]!==false;});
+  root.traverse(o=>{if(o.isLight){o.visible=LAYERS.lumieres!==false;return;}if(!o.isMesh)return;const m=o.material;let dl=null;
+    if(m===matCrystal)dl='cristaux';else if(m===matDrop)dl='ornements';else if(m===matLed)dl='leds';else if(m===matFlame||m===matCream)dl='lumieres';else if(m===matWing)dl='ailes';
+    if(dl)o.visible=LAYERS[dl]!==false;});
+  R();}
 function bbox(o){return new THREE.Box3().setFromObject(o).getSize(new THREE.Vector3());}
 function fitsBed(s){const b=[...BED[P.bed]].sort((a,b)=>b-a);const d=[s.x,s.y,s.z].sort((a,b)=>b-a);return d[0]<=b[0]-10&&d[1]<=b[1]-10&&d[2]<=b[2]-10;}
 function updateReadout(){const w=bbox(root);const dia=(Math.max(w.x,w.z)/1000).toFixed(2),hgt=(w.y/1000).toFixed(2);
@@ -591,7 +619,7 @@ function updateXSection(){const el=$('xsection');if(!el)return;
     <line x1="${cx0}" y1="${innerBot+9}" x2="${cx0+cw}" y2="${innerBot+9}" stroke="#ffce7a" stroke-width="0.8"/>
     <line x1="${cx0}" y1="${innerBot+5}" x2="${cx0}" y2="${innerBot+13}" stroke="#ffce7a" stroke-width="0.8"/>
     <line x1="${cx0+cw}" y1="${innerBot+5}" x2="${cx0+cw}" y2="${innerBot+13}" stroke="#ffce7a" stroke-width="0.8"/>
-    <text x="${cx}" y="${innerBot+24}" fill="#ffce7a" font-size="10.5" text-anchor="middle">canal interne ${chW} mm</text>
+    <text x="${cx}" y="${innerBot+24}" fill="#ffce7a" font-size="10.5" text-anchor="middle">canal creusé ${chW} mm</text>
     <text x="${cx}" y="${innerBot+39}" fill="#ffdca0" font-size="9.5" text-anchor="middle">ruban 12 mm + marge ${margin} mm/côté</text>
     <text x="${cx}" y="${innerBot+53}" fill="#9bc0e0" font-size="9.5" text-anchor="middle">paroi ≈ ${wall.toFixed(1)} mm · stries conservées autour</text>
     ${narrow?`<text x="${cx}" y="${H-8}" fill="#ff8a8a" font-size="9.5" text-anchor="middle">⚠ Ø bras trop petit (canal + parois)</text>`:(P.flutes?`<text x="${cx}" y="${H-8}" fill="#9bc0e0" font-size="9" text-anchor="middle">stries : ${P.fluteCount} × ${dep} mm</text>`:`<text x="${cx}" y="${H-8}" fill="#6a6a6a" font-size="9" text-anchor="middle">stries off</text>`)}
@@ -611,6 +639,8 @@ chip('t-fabric',e=>{P.showFabric=!P.showFabric;e.target.classList.toggle('on',P.
 chip('t-ceiling',e=>{P.showCeiling=!P.showCeiling;e.target.classList.toggle('on',P.showCeiling);ceil.visible=P.showCeiling;R();});
 function pickMatFinish(m){P.matFinish=m;$('mf-metal').classList.toggle('on',m==='metal');$('mf-filament').classList.toggle('on',m==='filament');applyFinish();}
 chip('mf-metal',()=>pickMatFinish('metal'));chip('mf-filament',()=>pickMatFinish('filament'));
+chip('t-ledchan',e=>{P.ledChannel=!P.ledChannel;e.target.classList.toggle('on',P.ledChannel);sched();});
+[['ly-corps','corps'],['ly-rosace','rosace'],['ly-chaine','chaine'],['ly-bras','bras'],['ly-ailes','ailes'],['ly-ornements','ornements'],['ly-cristaux','cristaux'],['ly-leds','leds'],['ly-lumieres','lumieres']].forEach(([id,k])=>chip(id,e=>{LAYERS[k]=!LAYERS[k];e.target.classList.toggle('on',LAYERS[k]);applyLayers();}));
 function buildFinishSwatches(){const c=$('finish-sw');if(!c)return;
   c.innerHTML=Object.entries(FINISHES).map(([k,fI])=>`<div class="sw${k===P.finish?' on':''}" data-f="${k}" title="${fI.label}" style="background:${fI.sw}"></div>`).join('');
   c.querySelectorAll('.sw').forEach(sw=>sw.addEventListener('click',()=>{c.querySelectorAll('.sw').forEach(x=>x.classList.remove('on'));sw.classList.add('on');P.finish=sw.dataset.f;applyFinish();}));}
@@ -629,6 +659,8 @@ function syncUI(){
   $('t-fabric').classList.toggle('on',P.showFabric!==false);
   $('t-ceiling').classList.toggle('on',!!P.showCeiling);ceil.visible=!!P.showCeiling;
   $('mf-metal').classList.toggle('on',P.matFinish!=='filament');$('mf-filament').classList.toggle('on',P.matFinish==='filament');
+  $('t-ledchan').classList.toggle('on',P.ledChannel!==false);
+  ['corps','rosace','chaine','bras','ailes','ornements','cristaux','leds','lumieres'].forEach(k=>$('ly-'+k).classList.toggle('on',LAYERS[k]!==false));
   updateBulbHint();updateXSection();
   buildFinishSwatches();applyFinish();refreshEnabled();
   matWing=makeWingMat();applyGrain();renderTierCfg();rebuild();
