@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- LUMIIA — Générateur de Lustre Gothique — v2.8 -->
+<!-- LUMIIA — Générateur de Lustre Gothique — v2.9 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -73,7 +73,7 @@
 <body>
 <div id="app">
   <aside id="panel">
-    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.8</span></div>
+    <div class="brand"><h1>LVMIIA</h1><span class="ver">LUSTRE · v2.9</span></div>
     <div class="tag">Générateur paramétrique gothique — 1 à 2 m</div>
 
     <div class="grp" id="preset-grp">
@@ -90,6 +90,7 @@
         <div class="toggles"><div class="chip" id="preset-load">Charger</div><div class="chip" id="preset-del">Supprimer</div></div>
         <input id="preset-name" type="text" placeholder="nom du preset (ex. Lustre bar)">
         <button class="btn" id="preset-save">Enregistrer le réglage actuel</button>
+        <button class="btn ghost" id="preset-reset">Réinitialiser (valeurs par défaut)</button>
         <div id="preset-msg" class="hint-txt"></div>
       </div>
     </div>
@@ -233,7 +234,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref as dbRef, onValue, set as dbSet, remove as dbRemove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-const VERSION='v2.8';
+const VERSION='v2.9';
 const BED={single:[325,320,325],dual:[300,320,325]};
 const LED_SPACING=1000/60, STRIP_W=12, BAND_H=10;
 const P={arms:8,tiers:1,colH:600,bulges:3,finial:1,chain:250,
@@ -635,17 +636,19 @@ function buildFinishSwatches(){const c=$('finish-sw');if(!c)return;
 const objExporter=new OBJExporter();
 function exportOBJ(){const w=recentered(root);stripDisplay(w);dl(new Blob([objExporter.parse(w)],{type:'text/plain'}),'lustre.obj');toast('OBJ exporté (maillage)');}
 function exportArmTest(){
-  const r=(P.tubeDia||24)/2,N=160,outer=[];
-  for(let j=0;j<N;j++){const a=j/N*Math.PI*2,rr=r*(P.flutes?(1+0.5*P.fluteDepth*Math.cos(a*P.fluteCount)):1);outer.push(new THREE.Vector2(Math.cos(a)*rr,Math.sin(a)*rr));}
+  const dia=(P.tubeDia||24),r=dia/2,N=96,outer=[];
+  for(let j=0;j<N;j++){const a=j/N*Math.PI*2;outer.push(new THREE.Vector2(Math.cos(a)*r,Math.sin(a)*r));} // CERCLE parfait (pas de stries sur le coupon : c'est un gabarit de controle Ø + LED)
   const shape=new THREE.Shape(outer);
-  if(P.ledChannel){const margin=1.5,chW=12+2*margin,chH=5,wall=Math.max(2.5,r*0.14),cyc=-(r-wall-chH/2);
-    shape.holes.push(new THREE.Path([new THREE.Vector2(-chW/2,cyc-chH/2),new THREE.Vector2(chW/2,cyc-chH/2),new THREE.Vector2(chW/2,cyc+chH/2),new THREE.Vector2(-chW/2,cyc+chH/2)]));}
+  const chW=12+3,chH=5.5,wall=Math.max(2.6,r*0.14),cy=-(r-wall-chH/2); // canal LED = vrai trou traversant pres du bas (ruban 12mm + marge)
+  const h=new THREE.Path();h.moveTo(-chW/2,cy-chH/2);h.lineTo(-chW/2,cy+chH/2);h.lineTo(chW/2,cy+chH/2);h.lineTo(chW/2,cy-chH/2);h.closePath(); // sens horaire => trou soustrait
+  shape.holes.push(h);
   const geo=new THREE.ExtrudeGeometry(shape,{depth:20,bevelEnabled:false,steps:1});
   const w=new THREE.Group();w.add(new THREE.Mesh(geo,matArm));w.updateMatrixWorld(true);
   dl(new Blob([exporter.parse(w,{binary:true})],{type:'application/octet-stream'}),'test_coupe_bras_2cm.stl');
-  toast('Test coupe (2 cm) exporté — Ø rond + canal LED interne');}
+  toast('Coupon 2 cm — Ø '+dia+' mm rond + canal LED traversant · règle le remplissage à 5% dans Bambu Studio');}
 $('exp-obj').addEventListener('click',exportOBJ);
 $('exp-armtest').addEventListener('click',exportArmTest);
+$('preset-reset').addEventListener('click',()=>{if(confirm('Repartir des valeurs par défaut ? Les réglages non enregistrés seront perdus.'))location.reload();});
 function snapshotP(){const o={...P};delete o.pieces;delete o.spin;return o;}
 function syncUI(){
   sliders.forEach(([id,key,dec,unit])=>{const el=$(id);if(!el||P[key]===undefined)return;el.value=P[key];const lab=$('lab-'+id);if(lab)lab.textContent=(dec?(+P[key]).toFixed(dec):P[key])+unit;});
